@@ -19,28 +19,6 @@ Particle::Particle(){
     density = 1.f;
 }
 
-MACGrid::MACGrid(){
-}
-
-void MACGrid::initialize(){
-    vel_U.MACGridDataInitialize();
-    vel_V.MACGridDataInitialize();
-    vel_W.MACGridDataInitialize();
-    P.MACGridDataInitialize();
-}
-
-MACGrid& MACGrid::operator =(const MACGrid& val){
-    if (&val == this)
-    {
-        return *this;
-    }
-    vel_U = val.vel_U;
-    vel_V = val.vel_V;
-    vel_W = val.vel_W;
-    P = val.P;
-    return *this;
-}
-
 FluidSolver::FluidSolver(){
     LastUsedParticle = 0;
     MaxParticles = 200000;
@@ -87,9 +65,6 @@ void FluidSolver::genParticles(float particle_separation, float boundx, float bo
             }
         }
     }
-    ParticlePos.resize(ParticlesContainer.size());
-    lambda.resize(ParticlesContainer.size());
-    del_p.resize(ParticlesContainer.size());
 }
 
 vec3 FluidSolver::integratePos(const vec3 pos, const vec3 speed, float time_step, bool RK2){

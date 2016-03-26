@@ -30,24 +30,11 @@ public:
     float life; // Remaining life of the particle. if <0 : dead and unused.
     float cameradistance; // *Squared* distance to the camera. if dead : -1.0f
 
-
+    std::vector<Particle *> neighbors;
     bool operator<(const Particle& that) const {
         // Sort in reverse order : far particles drawn first.
         return this->cameradistance > that.cameradistance;
     }
-};
-
-class MACGrid{
-public:
-    MACGrid();
-    void initialize();
-    MACGrid& operator=(const MACGrid& val);
-    MACGridDataX vel_U;
-    MACGridDataY vel_V;
-    MACGridDataZ vel_W;
-    MACGridData P;
-    MACGridData mNeighbors;
-protected:
 };
 
 class FluidSolver{
@@ -57,13 +44,7 @@ public:
 
     int LastUsedParticle; int MaxParticles;
     std::vector<Particle> ParticlesContainer;
-    std::vector<vec3> ParticlePos;
 
-    std::vector<float> lambda;
-    std::vector<vec3> del_p;
-
-    std::vector<Particle> particle_save; //to save particle velocity
-    MACGrid Grid;
     vec3 integratePos(const vec3 pos, const vec3 speed, float time_step, bool RK2);
 
     int findUnusedParticles();

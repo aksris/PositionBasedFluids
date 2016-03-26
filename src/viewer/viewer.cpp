@@ -150,7 +150,7 @@ void Viewer::display(){
     glGenVertexArrays(1, &VertexArrayID);
     glBindVertexArray(VertexArrayID);
 
-    PBFSolver* fluid = new PBFSolver();
+    PBFSolver* fluid = new PBFSolver(scene.containerBoundsMin, scene.containerBoundsMax);
 
     static GLfloat* g_particule_position_size_data = new GLfloat[fluid->MaxParticles * 4];
     static GLubyte* g_particule_color_data         = new GLubyte[fluid->MaxParticles * 4];
@@ -214,43 +214,6 @@ void Viewer::display(){
         float delta_rec = (1.f / (delta));
         glm::vec3 pos, nor;
         //simulation loop
-        while(iter < 500){
-            for(int i = 0; i < fluid->ParticlesContainer.size(); ++i){
-                //calculate lambda_i's
-                fluid->lambda[i] = fluid->CalculateLambda(fluid->ParticlesContainer[i]);
-            }
-            for(int i = 0; i < fluid->ParticlesContainer.size(); ++i){
-                //calculate delta pos
-                fluid->del_p[i] = fluid->CalculateDeltaP(fluid->ParticlesContainer[i], i);
-                //do collision detection and response
-                bool collision = cube.collisionDetect(&fluid->ParticlesContainer.at(i), delta, pos, nor);
-                if (collision) {
-                    fluid->ParticlesContainer.at(i).r = abs(nor.r) * 220;
-                    fluid->ParticlesContainer.at(i).g = abs(nor.g) * 220;
-                    fluid->ParticlesContainer.at(i).b = abs(nor.b) * 220;
-//                    std::cout << nor.x << ", " << nor.y << ", " << nor.z << std::endl;
-//                    fluid->ParticlesContainer.at(i).pos += fluid->ParticlesContainer.at(i).pos * glm::normalize(glm::cross(fluid->del_p.at(i), glm::normalize(nor)));
-                }
-                else {
-                    fluid->ParticlesContainer.at(i).r = 0;
-                    fluid->ParticlesContainer.at(i).g = 0;
-                    fluid->ParticlesContainer.at(i).b = 220;
-                }
-            }
-            for(int i = 0; i < fluid->ParticlesContainer.size(); ++i){
-                fluid->ParticlePos[i] = fluid->ParticlesContainer[i].pos + 0.f* fluid->del_p[i];
-            }
-            iter++;
-        }
-        std::cout << "delta " << delta << std::endl;
-
-        for(int i = 0; i < fluid->ParticlesContainer.size(); ++i){
-//            //integrate
-            fluid->ParticlesContainer.at(i).speed = delta_rec * (fluid->ParticlePos[i] - fluid->ParticlesContainer.at(i).pos);
-            fluid->ParticlesContainer.at(i).pos = fluid->ParticlePos[i];
-//            std::cout << fluid->ParticlesContainer.at(i).pos.x << ", " << fluid->ParticlesContainer.at(i).pos.y << ", " << fluid->ParticlesContainer.at(i).pos.z << std::endl;
-        }
-
 
         int ParticlesCount = 0;
         for(int i=0; i< fluid->ParticlesContainer.size(); i++){
