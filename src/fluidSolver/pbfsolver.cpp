@@ -22,10 +22,10 @@ float CalculateGradSpiky(float r, float h){
 }
 
 // Given position in world space, return the index of the corresponding cell in grid space.
-vec3 Grid::getIndices(vec3 pos) {
-    int i = (int)(pos[0] / cellSize);
-    int j = (int)(pos[1] / cellSize);
-    int k = (int)(pos[2] / cellSize);
+vec3 Grid::getIndices(const vec3 &pos) {
+    int i = (int)((pos[0] - minBounds[0]) / cellSize);
+    int j = (int)((pos[1] - minBounds[1]) / cellSize);
+    int k = (int)((pos[2] - minBounds[2]) / cellSize);
     return vec3(i, j, k);
 }
 
@@ -52,7 +52,7 @@ void Grid::clear() {
 
 std::vector<Particle *> PBFSolver::FindNeighbors(Particle *p){
     p->neighbors.clear();
-    vec3 indices = uGrid.getIndices(*p);
+    vec3 indices = uGrid.getIndices(p->pos);
     for (int i = indices[0] - NEIGHBOR_RADIUS; i <= indices[0] + NEIGHBOR_RADIUS; ++i){
         for (int j = indices[1] - NEIGHBOR_RADIUS; j <= indices[1] + NEIGHBOR_RADIUS; ++j){
             for (int k = indices[2] - NEIGHBOR_RADIUS; k <= indices[2] + NEIGHBOR_RADIUS; ++k){

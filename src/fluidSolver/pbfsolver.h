@@ -34,7 +34,7 @@ public:
 
     Cell* operator() (int i, int j, int k);
 
-    vec3 getIndices(vec3 pos);
+    vec3 getIndices(const vec3 &pos);
     void update(const std::vector<Particle> &particles);
     void clear();
     int flatIndex(int i, int j, int k);
