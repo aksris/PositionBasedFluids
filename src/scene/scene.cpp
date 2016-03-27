@@ -45,6 +45,8 @@ void Scene::parseScene(const char* filename, Scene& scene){
     float separation = root["particleSeparation"].asFloat();
 
     scene.containerBounds = glm::vec3(scale_x, scale_y, scale_z);
+    scene.containerBoundsMin = scene.containerBounds/-2.f;
+    scene.containerBoundsMax = scene.containerBounds/2.f;
     scene.particleBounds = glm::vec3(bound_x, bound_y, bound_z);
     scene.particle_separation = separation;
 }
