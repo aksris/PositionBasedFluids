@@ -3,7 +3,7 @@
 #include "fluidSolver.hpp"
 #include <map>
 # define M_PI          3.141592653589793238462643383279502884f /* pi */
-#define EPSILON 0.001f;
+#define EPSILON 0.0001f
 #define del_q 0.1
 #define PBF_H 0.5f
 #define NEIGHBOR_RADIUS 1 //find neighbor radius
@@ -25,7 +25,7 @@ public:
         dimensions = vec3((maxBounds[0]-minBounds[0])/cellSize,
                 (maxBounds[1]-minBounds[1])/cellSize, (maxBounds[2]-minBounds[2])/cellSize);
         cells = std::vector<Cell *>(dimensions[0]*dimensions[1]*dimensions[2], new Cell());
-    };
+    }
     vec3 minBounds;
     vec3 maxBounds;
     vec3 dimensions;
@@ -47,13 +47,17 @@ public:
 
     void ApplyForces(Particle &p, float del_t);
     float CalculateDensity(Particle *p, float h);
-    std::vector <Particle*> FindNeighbors(Particle *p);
+    float CalculateLagrangeMultiplier(Particle* p);
+    vec3 CalculateDeltaP(Particle* p, int particleIndex, int neighborIndex);
+    void FindNeighbors(Particle *p);
+    vec3 GradientAtP(Particle* p);
+    vec3 GradientAtN(Particle* n, Particle* p);
 protected:
     float rDensity;
 private:
     int numParticles;
     Grid uGrid;
 };
-float CalculateGradSpiky(float r, float h);
-float CalculatePoly6(float r, float h);
+vec3 CalculateGradSpiky(vec3 r, float h);
+float CalculatePoly6(vec3 r, float h);
 #endif // PBFSOLVER_H

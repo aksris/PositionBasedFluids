@@ -44,6 +44,7 @@ public:
 
     int LastUsedParticle; int MaxParticles;
     std::vector<Particle> ParticlesContainer;
+    std::vector<float> lambda;
 
     vec3 integratePos(const vec3 pos, const vec3 speed, float time_step, bool RK2);
 

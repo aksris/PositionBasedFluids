@@ -209,10 +209,6 @@ void Viewer::display(){
         for (int i = 0; i < fluid->ParticlesContainer.size(); ++i){
             fluid->ApplyForces(fluid->ParticlesContainer[i], delta * 0.5f);
         }
-//        fluid->FindNeighbors();
-        int iter = 0;
-        float delta_rec = (1.f / (delta));
-        glm::vec3 pos, nor;
         //simulation loop
 
         int ParticlesCount = 0;
@@ -220,8 +216,6 @@ void Viewer::display(){
 
             Particle& p = fluid->ParticlesContainer[i]; // shortcut
 
-//            p.speed += glm::vec3(0.0f,-9.81f * 0.f, 0.0f) * (float)delta * 0.5f;
-//            p.pos += p.speed * (float)delta;
             p.cameradistance = glm::length2( p.pos - CameraPosition );
 
             // Fill the GPU buffer
