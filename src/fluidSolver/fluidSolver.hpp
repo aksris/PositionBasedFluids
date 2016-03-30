@@ -29,6 +29,8 @@ public:
     float size, angle, mass, density;
     float life; // Remaining life of the particle. if <0 : dead and unused.
     float cameradistance; // *Squared* distance to the camera. if dead : -1.0f
+    float lambda;
+    vec3 pos_star;
 
     std::vector<Particle *> neighbors;
     bool operator<(const Particle& that) const {
@@ -45,6 +47,7 @@ public:
     int LastUsedParticle; int MaxParticles;
     std::vector<Particle> ParticlesContainer;
     std::vector<float> lambda;
+    std::vector<vec3> del_p;
 
     vec3 integratePos(const vec3 pos, const vec3 speed, float time_step, bool RK2);
 

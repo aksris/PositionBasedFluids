@@ -3,7 +3,7 @@
 ##################
 
 # credit - base CMake config : Yining Karl Li , edited CMake config: Akshay Shah & Debanshu Singh
-
+set(CMAKE_BUILD_TYPE Debug)
 #name your project
 project(Thanda)
 cmake_minimum_required(VERSION 2.8)
@@ -14,8 +14,9 @@ set (NUPARU "nuparu")
 include_directories(
         ${NUPARU}/include
         ${NUPARU}/src
-        src
 )
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 # Add path for pre-compiled libraries here (we will later link them with our compiled source)
 # Add Nuparu library to path for OSX, linux and windows
@@ -34,10 +35,17 @@ set(GLFW_LIBRARY_DIR ${CMAKE_LIBRARY_PATH})
 set(GLEW_LIBRARY_DIR ${CMAKE_LIBRARY_PATH})
 
 # Use find_package & find_library to link with
-find_package(OPENGL REQUIRED)
+find_package(OpenGL REQUIRED)
 find_package(GLEW)
 find_library(GLFW_LIBRARY "glfw3" HINTS ${GLFW_LIBRARY_DIR})
 find_library(JSONCPP "jsoncpp")
+find_library(OPENVDB openvdb Half)
+find_library(HALF Half)
+find_library(TBB NAMES tbb tbbmalloc)
+find_library(ZLIB z)
+find_library(ANT AntTweakBar)
+
+#Iex IexMath Imath IlmThread
 
 add_definitions(
         -DTW_STATIC
@@ -47,7 +55,7 @@ add_definitions(
         -D_CRT_SECURE_NO_WARNINGS
 )
 
-set(CORE_LIBS ${GLFW_LIBRARY} ${GLUT_LIBRARY} ${GLEW_LIBRARY} ${JSONCPP} ${OPENGL_LIBRARY} )
+set(CORE_LIBS ${GLFW_LIBRARY} ${GLUT_LIBRARY} ${GLEW_LIBRARY} ${JSONCPP} ${OPENGL_LIBRARY} ${OPENVDB} ${TBB} ${ZLIB} ${HALF} ${ANT})
 
 # OSX-specific hacks/fixes
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -60,22 +68,23 @@ endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
 # Linux specific hacks/fixes
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lX11 -lXxf86vm -lXrandr -lpthread -lXi")
+    set(CORE_LIBS ${CORE_LIBS} X11 Xxf86vm Xrandr pthread Xi)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lX11 -lXxf86vm -lXrandr -lpthread -lXi -lz")
 endif()
 
 # set compiler flags for c++11
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -m64 -msse2 -w")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O0 -m64 -msse2 -w")
 elseif(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif()
 
 if(MSVC)
-    set(COMPILER_FLAGS 
+    set(COMPILER_FLAGS
             CMAKE_CXX_FLAGS
             CMAKE_CXX_FLAGS_DEBUG
             CMAKE_CXX_FLAGS_RELEASE
-            CMAKE_C_FLAGS 
+            CMAKE_C_FLAGS
             CMAKE_C_FLAGS_DEBUG
             CMAKE_C_FLAGS_RELEASE
         )

@@ -4,13 +4,13 @@ PBFSolver::PBFSolver(vec3 minBounds, vec3 maxBounds)
 {
     rDensity = 1000.f;
     numParticles = ParticlesContainer.size();
-    uGrid = Grid(minBounds, maxBounds, 1);
+    uGrid = Grid(minBounds, maxBounds, 1.f);
 }
 
 void PBFSolver::ApplyForces(Particle& p, float del_t){
     //gravity force
     p.speed += glm::vec3(0.f, -9.81f, 0.f) * del_t;
-    p.pos += p.speed * del_t;
+    p.pos_star = p.pos + p.speed * del_t;
 }
 
 float CalculatePoly6(vec3 r, float h){
@@ -20,7 +20,9 @@ float CalculatePoly6(vec3 r, float h){
 
 vec3 CalculateGradSpiky(vec3 r, float h){
     float mag_r = (length(r));
-    return -45.f * pow((h - mag_r), 2) / (M_PI * pow(h, 6)) * (r / mag_r);
+    if(mag_r < 0.00001f)
+        return vec3(0.f);
+    return -45.f * (float) (pow((h - mag_r), 2) / (M_PI * pow(h, 6))) * (r / mag_r);
 }
 
 // Given position in world space, return the index of the corresponding cell in grid space.
@@ -32,15 +34,17 @@ vec3 Grid::getIndices(const vec3 &pos) {
 }
 
 int Grid::flatIndex(int i, int j, int k) {
-    return i + dimensions[1] * (j + dimensions[2] * k);
+    int a = i + dimensions[1] * (j + dimensions[2] * k);
+    return a;
 }
 
 Cell* Grid::operator() (int i, int j, int k) {
+//    vec3 idx = getIndices(vec3(i,j,k));
     return cells[flatIndex(i, j, k)];
 }
 
-void Grid::update(const std::vector<Particle> &particles) {
-    for (Particle p : particles) {
+void Grid::update( std::vector<Particle> &particles) {
+    for (Particle &p : particles) {
         vec3 indices = getIndices(p.pos);
         Cell * cell = cells[flatIndex(indices[0], indices[1], indices[2])];
         cell->particles.push_back(&p);
@@ -61,8 +65,11 @@ void PBFSolver::FindNeighbors(Particle *p){
             for (int k = indices[2] - NEIGHBOR_RADIUS; k <= indices[2] + NEIGHBOR_RADIUS; ++k){
                 if (i > 0 && j > 0 && k > 0){
                     if (i < uGrid.dimensions[0] && j < uGrid.dimensions[1] && k < uGrid.dimensions[2]){
-                        std::vector<Particle *> tmp_cell = uGrid(i, j, k)->particles;
-                        p->neighbors.insert( p->neighbors.end(), tmp_cell.begin(), tmp_cell.end() );
+                        std::vector<Particle *> &tmp_cell = uGrid(i, j, k)->particles;
+                        //p->neighbors.insert( p->neighbors.end(), tmp_cell.begin(), tmp_cell.end() );
+                        for (unsigned int q = 0; q < tmp_cell.size(); ++q) {
+                            p->neighbors.push_back(tmp_cell.at(q));
+                        }
                     }
                 }
             }
@@ -70,12 +77,24 @@ void PBFSolver::FindNeighbors(Particle *p){
     }
 }
 
+float CalculatePoly8(float r, float h){
+    return (315.f * pow((h*h - r*r),3) / (64.f * M_PI * pow(h, 9)));
+}
+
+float PBFSolver::CalculateSCorr(vec3 r, float h, float q, int n){
+    float ret = 1.f;
+
+    ret = 0.1f * pow((CalculatePoly6(r, h)/CalculatePoly8(q*h, h)),n);
+
+    return ret;
+}
+
 float PBFSolver::CalculateDensity(Particle *p, float h){
     float totalDensity = 0.f;
 
     for(Particle *n : p->neighbors){
         vec3 r = ((n->pos - p->pos));
-        totalDensity += CalculatePoly6(r, h);
+        totalDensity += p->mass * CalculatePoly6(r, h);
     }
     // this is because we have the current particle in the neighbor list, so we subtract the contribution to density
     return totalDensity - CalculatePoly6(vec3(0.f), h);
@@ -83,13 +102,13 @@ float PBFSolver::CalculateDensity(Particle *p, float h){
 
 vec3 PBFSolver::GradientAtN(Particle* n, Particle* p){
     vec3 r = (p->pos - n->pos);
-    float h = 1.f;
+    float h = 1.000001f;
     return -1.f / rDensity * CalculateGradSpiky(r, h);
 }
 
 vec3 PBFSolver::GradientAtP(Particle* p){
     vec3 totalGradientConstraint(0.f);
-    float h = 1.f;
+    float h = 1.000001f;
     for(Particle *n : p->neighbors){
         vec3 r = ((n->pos - p->pos));
         totalGradientConstraint += CalculateGradSpiky(r, h);
@@ -98,24 +117,21 @@ vec3 PBFSolver::GradientAtP(Particle* p){
     return 1.f / rDensity * (totalGradientConstraint - CalculateGradSpiky(vec3(0.f), h));
 }
 
-float PBFSolver::CalculateLagrangeMultiplier(Particle* p){
+void PBFSolver::CalculateLagrangeMultiplier(Particle* p){
     const float eps = 1.0e-6f;
 
-    float h = 1.f, lambda;
+    float h = 1.000001f, lambda;
     float density = CalculateDensity(p, h);
     // Evaluate constraint function, numerator for the lagrangian multiplier
     const float C = std::max(density / rDensity - 1.0f, 0.0f);
 
     if(C != 0.f){
         float sum_grad_C2 = 0.0;
-        vec3 gradC_i(0.0f, 0.0f, 0.0f);
-
-        FindNeighbors(p);
 
         for(Particle* n : p->neighbors){
             //1. if k = i, k is the current particle
                 //summation over the neighbors
-            if(length(p->pos - n->pos) < EPSILON){
+            if(length(p->pos - n->pos) < 0.001f){
                 continue;
             }
             else{
@@ -132,21 +148,18 @@ float PBFSolver::CalculateLagrangeMultiplier(Particle* p){
     else{
         lambda = 0.f;
     }
-    return lambda;
+    p->lambda = lambda;
 }
 
-vec3 PBFSolver::CalculateDeltaP(Particle *p, int particleIndex, int neighborIndex){
+vec3 PBFSolver::CalculateDeltaP(Particle *p){
     vec3 del_p(0.f);
-    FindNeighbors(p);
-
+    float h = 1.f;
     const unsigned int numberOfParticles = p->neighbors.size();
     for (unsigned int j = 0; j < numberOfParticles; j++)
     {
-        if (neighborIndex < numberOfParticles)		// Test if fluid particle
-        {
+            vec3 r = ((p->neighbors[j]->pos - p->pos));
             const vec3 gradC_j = -1.f / rDensity * CalculateGradSpiky(p->pos - p->neighbors.at(j)->pos, 1.f);
-            del_p -= (lambda[particleIndex] + lambda[neighborIndex]) * gradC_j;
-        }
+            del_p -= (p->lambda + p->neighbors[j]->lambda + 0.f*CalculateSCorr(r, h, 0.1f, 4)) * gradC_j;
     }
     return del_p;
 }

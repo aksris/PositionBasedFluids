@@ -194,6 +194,8 @@ void Viewer::display(){
         double delta = currentTime - lastTime;
         lastTime = currentTime;
 
+        delta = 0.1f;
+
         camera.computeMatricesFromInputs(window);
         glm::mat4 ProjectionMatrixParticles = camera.getProjectionMatrix();
         glm::mat4 ViewMatrixParticles = camera.getViewMatrix();
@@ -209,7 +211,42 @@ void Viewer::display(){
         for (int i = 0; i < fluid->ParticlesContainer.size(); ++i){
             fluid->ApplyForces(fluid->ParticlesContainer[i], delta * 0.5f);
         }
+        for(Particle &p : fluid->ParticlesContainer){
+            p.pos[0] = p.pos[0] < -fluid->uGrid.dimensions[0] / 2 ? -fluid->uGrid.dimensions[0] / 2 : p.pos[0];
+            p.pos[1] = p.pos[1] < -fluid->uGrid.dimensions[1] / 2 ? -fluid->uGrid.dimensions[1] / 2 : p.pos[1];
+            p.pos[2] = p.pos[2] < -fluid->uGrid.dimensions[2] / 2 ? -fluid->uGrid.dimensions[2] / 2 : p.pos[2];
+
+            p.pos[0] = p.pos[0] > fluid->uGrid.dimensions[0] / 2 ? fluid->uGrid.dimensions[0] / 2 - 1 : p.pos[0];
+            p.pos[1] = p.pos[1] > fluid->uGrid.dimensions[1] / 2 ? fluid->uGrid.dimensions[1] / 2 - 1 : p.pos[1];
+            p.pos[2] = p.pos[2] > fluid->uGrid.dimensions[2] / 2 ? fluid->uGrid.dimensions[2] / 2 - 1 : p.pos[2];
+        }
+        fluid->uGrid.update(fluid->ParticlesContainer);
+        for(int j = 0; j < fluid->ParticlesContainer.size(); ++j){
+            fluid->FindNeighbors(&(fluid->ParticlesContainer[j]));
+        }
         //simulation loop
+        for(int i = 0; i < 6; i++){
+            for(Particle &p : fluid->ParticlesContainer){
+                fluid->CalculateLagrangeMultiplier(&p);
+            }
+            for(int j = 0; j < fluid->ParticlesContainer.size(); ++j){
+                fluid->del_p[j] = fluid->CalculateDeltaP(&fluid->ParticlesContainer[j] );
+                if (fluid->ParticlesContainer.at(j).pos_star.y < EPSILON){
+                    fluid->ParticlesContainer.at(j).speed *= (vec3(1.f, -1.f, 1.f));
+                    fluid->ParticlesContainer.at(j).pos_star += fluid->ParticlesContainer.at(j).speed
+                    * (float)delta ;
+                }
+            }
+            for(int i = 0; i < fluid->ParticlesContainer.size(); ++i){
+                fluid->ParticlesContainer[i].pos_star += fluid->del_p[i];
+            }
+        }
+
+        for(int i = 0; i < fluid->ParticlesContainer.size(); ++i){
+            fluid->ParticlesContainer[i].speed = 1.f / (float)delta * (fluid->ParticlesContainer[i].pos_star - fluid->ParticlesContainer[i].pos);
+            fluid->ParticlesContainer[i].pos = fluid->ParticlesContainer[i].pos_star;
+        }
+
 
         int ParticlesCount = 0;
         for(int i=0; i< fluid->ParticlesContainer.size(); i++){

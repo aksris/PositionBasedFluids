@@ -6,6 +6,7 @@
 #include "fluidSolver.hpp"
 Particle::Particle(){
     pos = glm::vec3(0.f, 0.f, 0.f);
+    pos_star = glm::vec3(0.f, 0.f, 0.f);
     speed = glm::vec3(0.f, 0.f, 0.f);
     r = 0;
     g = 0;
@@ -13,10 +14,11 @@ Particle::Particle(){
     a = 230;
     size = 0.1f;
     angle = 45.f;
-    mass = 1.f;
+    mass = 1.1f;
     life = 1.f;
     cameradistance = 10.f;
     density = 1.f;
+    lambda = 0.f;
 }
 
 FluidSolver::FluidSolver(){
@@ -65,6 +67,8 @@ void FluidSolver::genParticles(float particle_separation, float boundx, float bo
             }
         }
     }
+    lambda.resize(ParticlesContainer.size());
+    del_p.resize(ParticlesContainer.size());
 }
 
 vec3 FluidSolver::integratePos(const vec3 pos, const vec3 speed, float time_step, bool RK2){

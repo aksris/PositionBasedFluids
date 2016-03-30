@@ -11,7 +11,7 @@ int main()
     scene.parseScene(filename, scene);
     int width = 1024;
     int height = 768;
-	Viewer *view = new Viewer(width, height, scene);
+    Viewer *view = new Viewer(width, height, scene);
     view->display();
     return 0;
 }
