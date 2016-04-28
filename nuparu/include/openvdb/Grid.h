@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2012-2013 DreamWorks Animation LLC
+// Copyright (c) 2012-2016 DreamWorks Animation LLC
 //
 // All rights reserved. This software is distributed under the
 // Mozilla Public License 2.0 ( http://www.mozilla.org/MPL/2.0/ )
@@ -197,6 +197,20 @@ public:
     /// (converted to this grid's value type).
     virtual void pruneGrid(float tolerance = 0.0) = 0;
 
+#ifndef OPENVDB_2_ABI_COMPATIBLE
+    /// @brief Clip this grid to the given world-space bounding box.
+    /// @details Voxels that lie outside the bounding box are set to the background.
+    /// @warning Clipping a level set will likely produce a grid that is
+    /// no longer a valid level set.
+    void clipGrid(const BBoxd&);
+
+    /// @brief Clip this grid to the given index-space bounding box.
+    /// @details Voxels that lie outside the bounding box are set to the background.
+    /// @warning Clipping a level set will likely produce a grid that is
+    /// no longer a valid level set.
+    virtual void clip(const CoordBBox&) = 0;
+#endif
+
 
     //
     // Metadata
@@ -357,6 +371,16 @@ public:
 
     /// Read all data buffers for this grid.
     virtual void readBuffers(std::istream&) = 0;
+#ifndef OPENVDB_2_ABI_COMPATIBLE
+    /// Read all of this grid's data buffers that intersect the given index-space bounding box.
+    virtual void readBuffers(std::istream&, const CoordBBox&) = 0;
+    /// @brief Read all of this grid's data buffers that are not yet resident in memory
+    /// (because delayed loading is in effect).
+    /// @details If this grid was read from a memory-mapped file, this operation
+    /// disconnects the grid from the file.
+    /// @sa io::File::open, io::MappedFile
+    virtual void readNonresidentBuffers() const = 0;
+#endif
     /// Write out all data buffers for this grid.
     virtual void writeBuffers(std::ostream&) const = 0;
 
@@ -465,9 +489,7 @@ public:
     typedef typename _TreeType::Ptr                       TreePtrType;
     typedef typename _TreeType::ConstPtr                  ConstTreePtrType;
     typedef typename _TreeType::ValueType                 ValueType;
-
-    typedef typename tree::ValueAccessor<_TreeType>       Accessor;
-    typedef typename tree::ValueAccessor<const _TreeType> ConstAccessor;
+    typedef typename _TreeType::BuildType                 BuildType;
 
     typedef typename _TreeType::ValueOnIter               ValueOnIter;
     typedef typename _TreeType::ValueOnCIter              ValueOnCIter;
@@ -475,6 +497,11 @@ public:
     typedef typename _TreeType::ValueOffCIter             ValueOffCIter;
     typedef typename _TreeType::ValueAllIter              ValueAllIter;
     typedef typename _TreeType::ValueAllCIter             ValueAllCIter;
+
+    typedef typename tree::ValueAccessor<_TreeType, true>        Accessor;
+    typedef typename tree::ValueAccessor<const _TreeType, true>  ConstAccessor;
+    typedef typename tree::ValueAccessor<_TreeType, false>       UnsafeAccessor;
+    typedef typename tree::ValueAccessor<const _TreeType, false> ConstUnsafeAccessor;
 
     /// @brief ValueConverter<T>::Type is the type of a grid having the same
     /// hierarchy as this grid but a different value type, T.
@@ -520,7 +547,7 @@ public:
     Grid(const Grid&, ShallowCopy);
     /// @brief Deep copy another grid's metadata and transform, but construct a new tree
     /// with background value zero.
-    Grid(const GridBase&);
+    explicit Grid(const GridBase&);
 
     virtual ~Grid() {}
 
@@ -551,23 +578,43 @@ public:
     /// Return the name of the type of a voxel's value (e.g., "float" or "vec3d").
     virtual Name valueType() const { return tree().valueType(); }
 
-    /// Return this grid's background value.
+    /// @brief Return this grid's background value.
+    ///
+    /// @note Use tools::changeBackground to efficiently modify the background values.
     const ValueType& background() const { return mTree->background(); }
-    /// Replace this grid's background value.
-    void setBackground(const ValueType& val) { tree().setBackground(val); }
 
     /// Return @c true if this grid contains only inactive background voxels.
     virtual bool empty() const { return tree().empty(); }
     /// Empty this grid, so that all voxels become inactive background voxels.
     virtual void clear() { tree().clear(); }
 
-    /// Return an accessor that provides random read and write access to this grid's voxels.
+    /// @brief Return an accessor that provides random read and write access
+    /// to this grid's voxels. The accessor is safe in the sense that
+    /// it is registered by the tree of this grid.
     Accessor getAccessor() { return Accessor(tree()); }
+    /// @brief Return an accessor that provides random read and write access
+    /// to this grid's voxels. The accessor is unsafe in the sense that
+    /// it is not registered by the tree of this grid. In some rare
+    /// cases this can give a performance advantage over a registered
+    /// accessor but it is unsafe if the tree topology is modified.
+    ///
+    /// @warning Only use this method if you're an expert and know the
+    /// risks of using an unregistered accessor (see tree/ValueAccessor.h)
+    Accessor getUnsafeAccessor() { return UnsafeAccessor(tree()); }
     //@{
     /// Return an accessor that provides random read-only access to this grid's voxels.
     ConstAccessor getAccessor() const { return ConstAccessor(tree()); }
     ConstAccessor getConstAccessor() const { return ConstAccessor(tree()); }
     //@}
+    /// @brief Return an accessor that provides random read-only access
+    /// to this grid's voxels. The accessor is unsafe in the sense that
+    /// it is not registered by the tree of this grid. In some rare
+    /// cases this can give a performance advantage over a registered
+    /// accessor but it is unsafe if the tree topology is modified.
+    ///
+    /// @warning Only use this method if you're an expert and know the
+    /// risks of using an unregistered accessor (see tree/ValueAccessor.h)
+    ConstAccessor getConstUnsafeAccessor() const { return ConstUnsafeAccessor(tree()); }
 
     //@{
     /// Return an iterator over all of this grid's active values (tile and voxel).
@@ -596,34 +643,23 @@ public:
     /// @param value   the value to which to set voxels within the box
     /// @param active  if true, mark voxels within the box as active,
     ///                otherwise mark them as inactive
-    /// @note This operation generates a sparse, but not always optimally sparse,
+    /// @param sparse  if false, active tiles are voxelized, i.e. only active voxels
+    ///                 are generated from the fill operation. Defaults to true.  
+    /// @note If @a sparse is true this operation generates a sparse, but not always optimally sparse,
     /// representation of the filled box.  Follow fill operations with a prune()
     /// operation for optimal sparseness.
-    void fill(const CoordBBox& bbox, const ValueType& value, bool active = true);
+    void fill(const CoordBBox& bbox, const ValueType& value, bool active = true, bool sparse = true);
 
-    /// @brief Set the values of all inactive voxels and tiles of a narrow-band
-    /// level set from the signs of the active voxels, setting outside values to
-    /// +background and inside values to -background.
-    ///
-    /// @note This operation should only be used on closed, narrow-band level sets!
-    void signedFloodFill() { tree().signedFloodFill(); }
-
-    /// @brief Set the values of all inactive voxels and tiles of a narrow-band
-    /// level set from the signs of the active voxels, setting outside values to
-    /// @a outside and inside values to @a inside.
-    /// @details Also, set this grid's background value to @a outside.
-    ///
-    /// @note This operation should only be used on closed, narrow-band level sets!
-    /// Also, @a inside should be negative, and @a outside should be larger than @a inside.
-    void signedFloodFill(const ValueType& outside, const ValueType& inside);
-
-    /// @brief Reduce the memory footprint of this grid by increasing its sparseness
-    /// either losslessly (@a tolerance = 0) or lossily (@a tolerance > 0).
-    /// @details With @a tolerance > 0, sparsify regions where voxels have the same
-    /// active state and have values that differ by no more than the tolerance.
-    void prune(const ValueType& tolerance = zeroVal<ValueType>()) { tree().prune(tolerance); }
     /// Reduce the memory footprint of this grid by increasing its sparseness.
     virtual void pruneGrid(float tolerance = 0.0);
+
+#ifndef OPENVDB_2_ABI_COMPATIBLE
+    /// @brief Clip this grid to the given index-space bounding box.
+    /// @details Voxels that lie outside the bounding box are set to the background.
+    /// @warning Clipping a level set will likely produce a grid that is
+    /// no longer a valid level set.
+    virtual void clip(const CoordBBox&);
+#endif
 
     /// @brief Efficiently merge another grid into this grid using one of several schemes.
     /// @details This operation is primarily intended to combine grids that are mostly
@@ -736,6 +772,16 @@ public:
 
     /// Read all data buffers for this grid.
     virtual void readBuffers(std::istream&);
+#ifndef OPENVDB_2_ABI_COMPATIBLE
+    /// Read all of this grid's data buffers that intersect the given index-space bounding box.
+    virtual void readBuffers(std::istream&, const CoordBBox&);
+    /// @brief Read all of this grid's data buffers that are not yet resident in memory
+    /// (because delayed loading is in effect).
+    /// @details If this grid was read from a memory-mapped file, this operation
+    /// disconnects the grid from the file.
+    /// @sa io::File::open, io::MappedFile
+    virtual void readNonresidentBuffers() const;
+#endif
     /// Write out all data buffers for this grid.
     virtual void writeBuffers(std::ostream&) const;
 
@@ -1134,26 +1180,26 @@ Grid<TreeT>::newTree()
 
 template<typename TreeT>
 inline void
-Grid<TreeT>::fill(const CoordBBox& bbox, const ValueType& value, bool active)
+Grid<TreeT>::fill(const CoordBBox& bbox, const ValueType& value, bool active, bool sparse)
 {
-    tree().fill(bbox, value, active);
+    tree().fill(bbox, value, active, sparse);
 }
-
-
-template<typename TreeT>
-inline void
-Grid<TreeT>::signedFloodFill(const ValueType& outside, const ValueType& inside)
-{
-    tree().signedFloodFill(outside, inside);
-}
-
 
 template<typename TreeT>
 inline void
 Grid<TreeT>::pruneGrid(float tolerance)
 {
-    this->prune(ValueType(zeroVal<ValueType>() + tolerance));
+    this->tree().prune(ValueType(zeroVal<ValueType>() + tolerance));
 }
+
+#ifndef OPENVDB_2_ABI_COMPATIBLE
+template<typename TreeT>
+inline void
+Grid<TreeT>::clip(const CoordBBox& bbox)
+{
+    tree().clip(bbox);
+}
+#endif
 
 
 template<typename TreeT>
@@ -1252,6 +1298,26 @@ Grid<TreeT>::readBuffers(std::istream& is)
 }
 
 
+#ifndef OPENVDB_2_ABI_COMPATIBLE
+
+template<typename TreeT>
+inline void
+Grid<TreeT>::readBuffers(std::istream& is, const CoordBBox& bbox)
+{
+    tree().readBuffers(is, bbox, saveFloatAsHalf());
+}
+
+
+template<typename TreeT>
+inline void
+Grid<TreeT>::readNonresidentBuffers() const
+{
+    tree().readNonresidentBuffers();
+}
+
+#endif // !OPENVDB_2_ABI_COMPATIBLE
+
+
 template<typename TreeT>
 inline void
 Grid<TreeT>::writeBuffers(std::ostream& os) const
@@ -1333,6 +1399,6 @@ createLevelSet(Real voxelSize, Real halfWidth)
 
 #endif // OPENVDB_GRID_HAS_BEEN_INCLUDED
 
-// Copyright (c) 2012-2013 DreamWorks Animation LLC
+// Copyright (c) 2012-2016 DreamWorks Animation LLC
 // All rights reserved. This software is distributed under the
 // Mozilla Public License 2.0 ( http://www.mozilla.org/MPL/2.0/ )

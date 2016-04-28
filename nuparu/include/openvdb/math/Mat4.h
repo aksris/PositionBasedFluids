@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2012-2013 DreamWorks Animation LLC
+// Copyright (c) 2012-2016 DreamWorks Animation LLC
 //
 // All rights reserved. This software is distributed under the
 // Mozilla Public License 2.0 ( http://www.mozilla.org/MPL/2.0/ )
@@ -93,33 +93,38 @@ public:
          Source i, Source j, Source k, Source l,
          Source m, Source n, Source o, Source p)
     {
-        MyBase::mm[ 0] = a;
-        MyBase::mm[ 1] = b;
-        MyBase::mm[ 2] = c;
-        MyBase::mm[ 3] = d;
+        MyBase::mm[ 0] = T(a);
+        MyBase::mm[ 1] = T(b);
+        MyBase::mm[ 2] = T(c);
+        MyBase::mm[ 3] = T(d);
 
-        MyBase::mm[ 4] = e;
-        MyBase::mm[ 5] = f;
-        MyBase::mm[ 6] = g;
-        MyBase::mm[ 7] = h;
+        MyBase::mm[ 4] = T(e);
+        MyBase::mm[ 5] = T(f);
+        MyBase::mm[ 6] = T(g);
+        MyBase::mm[ 7] = T(h);
 
-        MyBase::mm[ 8] = i;
-        MyBase::mm[ 9] = j;
-        MyBase::mm[10] = k;
-        MyBase::mm[11] = l;
+        MyBase::mm[ 8] = T(i);
+        MyBase::mm[ 9] = T(j);
+        MyBase::mm[10] = T(k);
+        MyBase::mm[11] = T(l);
 
-        MyBase::mm[12] = m;
-        MyBase::mm[13] = n;
-        MyBase::mm[14] = o;
-        MyBase::mm[15] = p;
+        MyBase::mm[12] = T(m);
+        MyBase::mm[13] = T(n);
+        MyBase::mm[14] = T(o);
+        MyBase::mm[15] = T(p);
     }
 
-    /// Construct matrix given basis vectors (columns)
+    /// Construct matrix from rows or columns vectors (defaults to rows
+    /// for historical reasons)
     template<typename Source>
     Mat4(const Vec4<Source> &v1, const Vec4<Source> &v2,
-         const Vec4<Source> &v3, const Vec4<Source> &v4)
+         const Vec4<Source> &v3, const Vec4<Source> &v4, bool rows = true)
     {
-        setBasis(v1, v2, v3, v4);
+        if (rows) {
+            this->setRows(v1, v2, v3);
+        } else {
+            this->setColumns(v1, v2, v3);
+        }
     }
 
     /// Copy constructor
@@ -219,9 +224,9 @@ public:
         return MyBase::mm[4*i+j];
     }
 
-    /// Set the columns of "this" matrix to the vectors v1, v2, v3, v4
-    void setBasis(const Vec4<T> &v1, const Vec4<T> &v2,
-                         const Vec4<T> &v3, const Vec4<T> &v4)
+    /// Set the rows of "this" matrix to the vectors v1, v2, v3, v4
+    void setRows(const Vec4<T> &v1, const Vec4<T> &v2,
+                 const Vec4<T> &v3, const Vec4<T> &v4)
     {
         MyBase::mm[ 0] = v1[0];
         MyBase::mm[ 1] = v1[1];
@@ -242,6 +247,38 @@ public:
         MyBase::mm[13] = v4[1];
         MyBase::mm[14] = v4[2];
         MyBase::mm[15] = v4[3];
+    }
+
+    /// Set the columns of "this" matrix to the vectors v1, v2, v3, v4
+    void setColumns(const Vec4<T> &v1, const Vec4<T> &v2,
+                    const Vec4<T> &v3, const Vec4<T> &v4)
+    {
+        MyBase::mm[ 0] = v1[0];
+        MyBase::mm[ 1] = v2[0];
+        MyBase::mm[ 2] = v3[0];
+        MyBase::mm[ 3] = v4[0];
+
+        MyBase::mm[ 4] = v1[1];
+        MyBase::mm[ 5] = v2[1];
+        MyBase::mm[ 6] = v3[1];
+        MyBase::mm[ 7] = v4[1];
+
+        MyBase::mm[ 8] = v1[2];
+        MyBase::mm[ 9] = v2[2];
+        MyBase::mm[10] = v3[2];
+        MyBase::mm[11] = v4[2];
+
+        MyBase::mm[12] = v1[3];
+        MyBase::mm[13] = v2[3];
+        MyBase::mm[14] = v3[3];
+        MyBase::mm[15] = v4[3];
+    }
+    
+    /// Set the rows of "this" matrix to the vectors v1, v2, v3, v4
+    OPENVDB_DEPRECATED void setBasis(const Vec4<T> &v1, const Vec4<T> &v2,
+                                     const Vec4<T> &v3, const Vec4<T> &v4)
+    {
+        this->setRows(v1, v2, v3, v4);
     }
 
 
@@ -668,13 +705,6 @@ public:
         return det;
     }
 
-    /// This function snaps a specific axis to a specific direction,
-    /// preserving scaling. It does this using minimum energy, thus
-    /// posing a unique solution if basis & direction arent parralel.
-    /// Direction need not be unit.
-    Mat4 snapBasis(Axis axis, const Vec3<T> &direction)
-    {return snapBasis(*this, axis, direction);}
-
     /// Sets the matrix to a matrix that translates by v
     static Mat4 translation(const Vec3d& v)
     {
@@ -1040,7 +1070,8 @@ public:
         T0  w;
 
         // w = p * (*this).col(3);
-        w = p[0] * MyBase::mm[ 3] + p[1] * MyBase::mm[ 7] + p[2] * MyBase::mm[11] + MyBase::mm[15];
+        w = static_cast<T0>(p[0] * MyBase::mm[ 3] + p[1] * MyBase::mm[ 7]
+            + p[2] * MyBase::mm[11] + MyBase::mm[15]);
 
         if ( !isExactlyEqual(w , 0.0) ) {
             return Vec3<T0>(static_cast<T0>((p[0] * MyBase::mm[ 0] + p[1] * MyBase::mm[ 4] +
@@ -1362,6 +1393,6 @@ template<> inline math::Mat4d zeroVal<math::Mat4d>() { return math::Mat4d::ident
 
 #endif // OPENVDB_UTIL_MAT4_H_HAS_BEEN_INCLUDED
 
-// Copyright (c) 2012-2013 DreamWorks Animation LLC
+// Copyright (c) 2012-2016 DreamWorks Animation LLC
 // All rights reserved. This software is distributed under the
 // Mozilla Public License 2.0 ( http://www.mozilla.org/MPL/2.0/ )

@@ -28,6 +28,11 @@ using namespace std;
 #include "../geom/cube.h"
 #include <stdlib.h>
 #include <string.h>
+#include <openvdb/openvdb.h>
+#include <openvdb_points/openvdb.h>
+#include <openvdb_points/tools/PointDataGrid.h>
+#include <openvdb_points/tools/PointConversion.h>
+#include <openvdb_points/tools/PointCount.h>
 class Viewer {
 public:
     Viewer(int width, int height, Scene s);
@@ -41,5 +46,6 @@ public:
     Cube cube;
     GLuint CameraRight_worldspace_ID, CameraUp_worldspace_ID,  ViewProjMatrixID, programID, TextureID, programIDGeometry, geomMatrixID;
     GLFWwindow* window;
+    std::vector<openvdb::Vec3f> positions;
 };
 #endif /* viewer_hpp */

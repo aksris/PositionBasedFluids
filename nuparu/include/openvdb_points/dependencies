@@ -1,0 +1,25 @@
+tools/AttributeArray.o: tools/AttributeArray.cc \
+  ../openvdb_points/tools/AttributeArray.h ../openvdb_points/Types.h \
+  ../openvdb_points/tools/IndexIterator.h
+tools/AttributeGroup.o: tools/AttributeGroup.cc \
+  ../openvdb_points/tools/AttributeGroup.h \
+  ../openvdb_points/tools/AttributeArray.h ../openvdb_points/Types.h \
+  ../openvdb_points/tools/IndexIterator.h
+tools/AttributeSet.o: tools/AttributeSet.cc \
+  ../openvdb_points/tools/AttributeGroup.h \
+  ../openvdb_points/tools/AttributeArray.h ../openvdb_points/Types.h \
+  ../openvdb_points/tools/IndexIterator.h \
+  ../openvdb_points/tools/AttributeSet.h
+openvdb.o: openvdb.cc openvdb.h ../openvdb_points/tools/AttributeArray.h \
+  ../openvdb_points/Types.h ../openvdb_points/tools/IndexIterator.h \
+  ../openvdb_points/tools/AttributeGroup.h \
+  ../openvdb_points/tools/PointDataGrid.h \
+  ../openvdb_points/tools/AttributeSet.h
+cmd/openvdb_print/main.o: cmd/openvdb_print/main.cc \
+  ../openvdb_points/openvdb.h ../openvdb_points/tools/PointDataGrid.h \
+  ../openvdb_points/tools/AttributeSet.h \
+  ../openvdb_points/tools/AttributeArray.h ../openvdb_points/Types.h \
+  ../openvdb_points/tools/IndexIterator.h \
+  ../openvdb_points/tools/AttributeGroup.h \
+  ../openvdb_points/tools/PointCount.h \
+  ../openvdb_points/tools/PointAttribute.h

@@ -1,0 +1,261 @@
+Grid.o: Grid.cc Grid.h ../openvdb/Types.h version.h Platform.h \
+  PlatformConfig.h ../openvdb/math/Math.h ../openvdb/math/BBox.h \
+  ../openvdb/math/Vec3.h ../openvdb/Exceptions.h ../openvdb/math/Tuple.h \
+  ../openvdb/math/Quat.h ../openvdb/math/Mat.h ../openvdb/math/Mat3.h \
+  ../openvdb/math/Vec2.h ../openvdb/math/Vec4.h ../openvdb/math/Mat4.h \
+  ../openvdb/math/Coord.h ../openvdb/util/Name.h \
+  ../openvdb/math/Transform.h ../openvdb/math/Maps.h ../openvdb/io/io.h \
+  ../openvdb/tree/Tree.h ../openvdb/metadata/Metadata.h \
+  ../openvdb/util/Formats.h ../openvdb/util/logging.h \
+  ../openvdb/tree/RootNode.h ../openvdb/io/Compression.h \
+  ../openvdb/util/NodeMasks.h ../openvdb/tree/InternalNode.h \
+  ../openvdb/tree/Iterator.h ../openvdb/tree/NodeUnion.h \
+  ../openvdb/tree/LeafNode.h ../openvdb/tree/LeafNodeBool.h \
+  ../openvdb/tree/LeafNodeMask.h ../openvdb/tree/TreeIterator.h \
+  ../openvdb/tree/ValueAccessor.h ../openvdb/metadata/MetaMap.h \
+  ../openvdb/Metadata.h ../openvdb/metadata/StringMetadata.h
+io/Archive.o: io/Archive.cc io/Archive.h ../openvdb/Platform.h \
+  PlatformConfig.h ../openvdb/Grid.h ../openvdb/Types.h version.h \
+  ../openvdb/math/Math.h ../openvdb/math/BBox.h ../openvdb/math/Vec3.h \
+  ../openvdb/Exceptions.h ../openvdb/math/Tuple.h ../openvdb/math/Quat.h \
+  ../openvdb/math/Mat.h ../openvdb/math/Mat3.h ../openvdb/math/Vec2.h \
+  ../openvdb/math/Vec4.h ../openvdb/math/Mat4.h ../openvdb/math/Coord.h \
+  ../openvdb/util/Name.h ../openvdb/math/Transform.h \
+  ../openvdb/math/Maps.h ../openvdb/io/io.h ../openvdb/tree/Tree.h \
+  ../openvdb/metadata/Metadata.h ../openvdb/util/Formats.h \
+  ../openvdb/util/logging.h ../openvdb/tree/RootNode.h \
+  ../openvdb/io/Compression.h ../openvdb/util/NodeMasks.h \
+  ../openvdb/tree/InternalNode.h ../openvdb/tree/Iterator.h \
+  ../openvdb/tree/NodeUnion.h ../openvdb/tree/LeafNode.h \
+  ../openvdb/tree/LeafNodeBool.h ../openvdb/tree/LeafNodeMask.h \
+  ../openvdb/tree/TreeIterator.h ../openvdb/tree/ValueAccessor.h \
+  ../openvdb/metadata/MetaMap.h io/GridDescriptor.h \
+  ../openvdb/Metadata.h ../openvdb/metadata/StringMetadata.h
+io/Compression.o: io/Compression.cc io/Compression.h ../openvdb/Types.h \
+  version.h Platform.h PlatformConfig.h ../openvdb/math/Math.h \
+  ../openvdb/math/BBox.h ../openvdb/math/Vec3.h ../openvdb/Exceptions.h \
+  ../openvdb/math/Tuple.h ../openvdb/math/Quat.h ../openvdb/math/Mat.h \
+  ../openvdb/math/Mat3.h ../openvdb/math/Vec2.h ../openvdb/math/Vec4.h \
+  ../openvdb/math/Mat4.h ../openvdb/math/Coord.h io/io.h \
+  ../openvdb/util/logging.h
+io/File.o: io/File.cc io/File.h io/io.h ../openvdb/Platform.h \
+  PlatformConfig.h ../openvdb/version.h io/Archive.h ../openvdb/Grid.h \
+  ../openvdb/Types.h ../openvdb/math/Math.h ../openvdb/math/BBox.h \
+  ../openvdb/math/Vec3.h ../openvdb/Exceptions.h ../openvdb/math/Tuple.h \
+  ../openvdb/math/Quat.h ../openvdb/math/Mat.h ../openvdb/math/Mat3.h \
+  ../openvdb/math/Vec2.h ../openvdb/math/Vec4.h ../openvdb/math/Mat4.h \
+  ../openvdb/math/Coord.h ../openvdb/util/Name.h \
+  ../openvdb/math/Transform.h ../openvdb/math/Maps.h \
+  ../openvdb/tree/Tree.h ../openvdb/metadata/Metadata.h \
+  ../openvdb/util/Formats.h ../openvdb/util/logging.h \
+  ../openvdb/tree/RootNode.h ../openvdb/io/Compression.h \
+  ../openvdb/util/NodeMasks.h ../openvdb/tree/InternalNode.h \
+  ../openvdb/tree/Iterator.h ../openvdb/tree/NodeUnion.h \
+  ../openvdb/tree/LeafNode.h ../openvdb/tree/LeafNodeBool.h \
+  ../openvdb/tree/LeafNodeMask.h ../openvdb/tree/TreeIterator.h \
+  ../openvdb/tree/ValueAccessor.h ../openvdb/metadata/MetaMap.h \
+  io/GridDescriptor.h io/TempFile.h
+io/GridDescriptor.o: io/GridDescriptor.cc io/GridDescriptor.h \
+  ../openvdb/Grid.h ../openvdb/Types.h version.h Platform.h \
+  PlatformConfig.h ../openvdb/math/Math.h ../openvdb/math/BBox.h \
+  ../openvdb/math/Vec3.h ../openvdb/Exceptions.h ../openvdb/math/Tuple.h \
+  ../openvdb/math/Quat.h ../openvdb/math/Mat.h ../openvdb/math/Mat3.h \
+  ../openvdb/math/Vec2.h ../openvdb/math/Vec4.h ../openvdb/math/Mat4.h \
+  ../openvdb/math/Coord.h ../openvdb/util/Name.h \
+  ../openvdb/math/Transform.h ../openvdb/math/Maps.h ../openvdb/io/io.h \
+  ../openvdb/tree/Tree.h ../openvdb/metadata/Metadata.h \
+  ../openvdb/util/Formats.h ../openvdb/util/logging.h \
+  ../openvdb/tree/RootNode.h ../openvdb/io/Compression.h \
+  ../openvdb/util/NodeMasks.h ../openvdb/tree/InternalNode.h \
+  ../openvdb/tree/Iterator.h ../openvdb/tree/NodeUnion.h \
+  ../openvdb/tree/LeafNode.h ../openvdb/tree/LeafNodeBool.h \
+  ../openvdb/tree/LeafNodeMask.h ../openvdb/tree/TreeIterator.h \
+  ../openvdb/tree/ValueAccessor.h ../openvdb/metadata/MetaMap.h
+io/Queue.o: io/Queue.cc io/Queue.h ../openvdb/Types.h version.h \
+  Platform.h PlatformConfig.h ../openvdb/math/Math.h \
+  ../openvdb/math/BBox.h ../openvdb/math/Vec3.h ../openvdb/Exceptions.h \
+  ../openvdb/math/Tuple.h ../openvdb/math/Quat.h ../openvdb/math/Mat.h \
+  ../openvdb/math/Mat3.h ../openvdb/math/Vec2.h ../openvdb/math/Vec4.h \
+  ../openvdb/math/Mat4.h ../openvdb/math/Coord.h ../openvdb/Grid.h \
+  ../openvdb/util/Name.h ../openvdb/math/Transform.h \
+  ../openvdb/math/Maps.h ../openvdb/io/io.h ../openvdb/tree/Tree.h \
+  ../openvdb/metadata/Metadata.h ../openvdb/util/Formats.h \
+  ../openvdb/util/logging.h ../openvdb/tree/RootNode.h \
+  ../openvdb/io/Compression.h ../openvdb/util/NodeMasks.h \
+  ../openvdb/tree/InternalNode.h ../openvdb/tree/Iterator.h \
+  ../openvdb/tree/NodeUnion.h ../openvdb/tree/LeafNode.h \
+  ../openvdb/tree/LeafNodeBool.h ../openvdb/tree/LeafNodeMask.h \
+  ../openvdb/tree/TreeIterator.h ../openvdb/tree/ValueAccessor.h \
+  ../openvdb/metadata/MetaMap.h io/File.h io/Archive.h \
+  io/GridDescriptor.h io/Stream.h
+io/Stream.o: io/Stream.cc io/Stream.h io/Archive.h ../openvdb/Platform.h \
+  PlatformConfig.h ../openvdb/Grid.h ../openvdb/Types.h version.h \
+  ../openvdb/math/Math.h ../openvdb/math/BBox.h ../openvdb/math/Vec3.h \
+  ../openvdb/Exceptions.h ../openvdb/math/Tuple.h ../openvdb/math/Quat.h \
+  ../openvdb/math/Mat.h ../openvdb/math/Mat3.h ../openvdb/math/Vec2.h \
+  ../openvdb/math/Vec4.h ../openvdb/math/Mat4.h ../openvdb/math/Coord.h \
+  ../openvdb/util/Name.h ../openvdb/math/Transform.h \
+  ../openvdb/math/Maps.h ../openvdb/io/io.h ../openvdb/tree/Tree.h \
+  ../openvdb/metadata/Metadata.h ../openvdb/util/Formats.h \
+  ../openvdb/util/logging.h ../openvdb/tree/RootNode.h \
+  ../openvdb/io/Compression.h ../openvdb/util/NodeMasks.h \
+  ../openvdb/tree/InternalNode.h ../openvdb/tree/Iterator.h \
+  ../openvdb/tree/NodeUnion.h ../openvdb/tree/LeafNode.h \
+  ../openvdb/tree/LeafNodeBool.h ../openvdb/tree/LeafNodeMask.h \
+  ../openvdb/tree/TreeIterator.h ../openvdb/tree/ValueAccessor.h \
+  ../openvdb/metadata/MetaMap.h io/File.h io/GridDescriptor.h \
+  io/TempFile.h
+io/TempFile.o: io/TempFile.cc io/TempFile.h ../openvdb/version.h \
+  Platform.h PlatformConfig.h ../openvdb/Exceptions.h
+math/Maps.o: math/Maps.cc math/Maps.h math/Math.h ../openvdb/Platform.h \
+  PlatformConfig.h ../openvdb/version.h math/Mat4.h \
+  ../openvdb/Exceptions.h math/Mat3.h math/Vec3.h math/Tuple.h \
+  math/Mat.h math/Vec4.h math/BBox.h math/Coord.h ../openvdb/io/io.h \
+  ../openvdb/util/Name.h ../openvdb/Types.h ../openvdb/math/Quat.h \
+  ../openvdb/math/Vec2.h
+math/Proximity.o: math/Proximity.cc math/Proximity.h ../openvdb/Types.h \
+  version.h Platform.h PlatformConfig.h ../openvdb/math/Math.h \
+  ../openvdb/math/BBox.h math/Vec3.h ../openvdb/Exceptions.h \
+  math/Tuple.h ../openvdb/math/Quat.h math/Mat.h math/Mat3.h \
+  ../openvdb/math/Vec2.h ../openvdb/math/Vec4.h ../openvdb/math/Mat4.h \
+  ../openvdb/math/Coord.h
+math/QuantizedUnitVec.o: math/QuantizedUnitVec.cc math/QuantizedUnitVec.h \
+  ../openvdb/Platform.h PlatformConfig.h ../openvdb/version.h \
+  math/Vec3.h ../openvdb/Exceptions.h math/Math.h math/Tuple.h \
+  ../openvdb/Types.h ../openvdb/math/BBox.h ../openvdb/math/Quat.h \
+  math/Mat.h math/Mat3.h ../openvdb/math/Vec2.h ../openvdb/math/Vec4.h \
+  ../openvdb/math/Mat4.h ../openvdb/math/Coord.h
+math/Transform.o: math/Transform.cc math/Transform.h math/Maps.h \
+  math/Math.h ../openvdb/Platform.h PlatformConfig.h \
+  ../openvdb/version.h math/Mat4.h ../openvdb/Exceptions.h math/Mat3.h \
+  math/Vec3.h math/Tuple.h math/Mat.h math/Vec4.h math/BBox.h \
+  math/Coord.h ../openvdb/io/io.h ../openvdb/util/Name.h \
+  ../openvdb/Types.h ../openvdb/math/Quat.h ../openvdb/math/Vec2.h \
+  math/LegacyFrustum.h
+metadata/Metadata.o: metadata/Metadata.cc metadata/Metadata.h \
+  ../openvdb/Types.h version.h Platform.h PlatformConfig.h \
+  ../openvdb/math/Math.h ../openvdb/math/BBox.h ../openvdb/math/Vec3.h \
+  ../openvdb/Exceptions.h ../openvdb/math/Tuple.h ../openvdb/math/Quat.h \
+  ../openvdb/math/Mat.h ../openvdb/math/Mat3.h ../openvdb/math/Vec2.h \
+  ../openvdb/math/Vec4.h ../openvdb/math/Mat4.h ../openvdb/math/Coord.h \
+  ../openvdb/util/Name.h
+metadata/MetaMap.o: metadata/MetaMap.cc ../openvdb/metadata/MetaMap.h \
+  ../openvdb/metadata/Metadata.h ../openvdb/Types.h version.h Platform.h \
+  PlatformConfig.h ../openvdb/math/Math.h ../openvdb/math/BBox.h \
+  ../openvdb/math/Vec3.h ../openvdb/Exceptions.h ../openvdb/math/Tuple.h \
+  ../openvdb/math/Quat.h ../openvdb/math/Mat.h ../openvdb/math/Mat3.h \
+  ../openvdb/math/Vec2.h ../openvdb/math/Vec4.h ../openvdb/math/Mat4.h \
+  ../openvdb/math/Coord.h ../openvdb/util/Name.h \
+  ../openvdb/util/logging.h
+openvdb.o: openvdb.cc openvdb.h Platform.h PlatformConfig.h Types.h \
+  version.h ../openvdb/math/Math.h ../openvdb/math/BBox.h \
+  ../openvdb/math/Vec3.h ../openvdb/Exceptions.h ../openvdb/math/Tuple.h \
+  ../openvdb/math/Quat.h ../openvdb/math/Mat.h ../openvdb/math/Mat3.h \
+  ../openvdb/math/Vec2.h ../openvdb/math/Vec4.h ../openvdb/math/Mat4.h \
+  ../openvdb/math/Coord.h Metadata.h ../openvdb/metadata/Metadata.h \
+  ../openvdb/util/Name.h ../openvdb/metadata/StringMetadata.h \
+  math/Maps.h ../openvdb/io/io.h math/Transform.h Grid.h \
+  ../openvdb/tree/Tree.h ../openvdb/util/Formats.h \
+  ../openvdb/util/logging.h ../openvdb/tree/RootNode.h \
+  ../openvdb/io/Compression.h ../openvdb/util/NodeMasks.h \
+  ../openvdb/tree/InternalNode.h ../openvdb/tree/Iterator.h \
+  ../openvdb/tree/NodeUnion.h ../openvdb/tree/LeafNode.h \
+  ../openvdb/tree/LeafNodeBool.h ../openvdb/tree/LeafNodeMask.h \
+  ../openvdb/tree/TreeIterator.h ../openvdb/tree/ValueAccessor.h \
+  ../openvdb/metadata/MetaMap.h io/File.h ../openvdb/io/Archive.h \
+  ../openvdb/io/GridDescriptor.h ../openvdb/tools/PointIndexGrid.h \
+  ../openvdb/tree/LeafManager.h ../openvdb/tools/PointPartitioner.h
+Platform.o: Platform.cc openvdb.h Platform.h PlatformConfig.h Types.h \
+  version.h ../openvdb/math/Math.h ../openvdb/math/BBox.h \
+  ../openvdb/math/Vec3.h ../openvdb/Exceptions.h ../openvdb/math/Tuple.h \
+  ../openvdb/math/Quat.h ../openvdb/math/Mat.h ../openvdb/math/Mat3.h \
+  ../openvdb/math/Vec2.h ../openvdb/math/Vec4.h ../openvdb/math/Mat4.h \
+  ../openvdb/math/Coord.h Metadata.h ../openvdb/metadata/Metadata.h \
+  ../openvdb/util/Name.h ../openvdb/metadata/StringMetadata.h \
+  math/Maps.h ../openvdb/io/io.h math/Transform.h Grid.h \
+  ../openvdb/tree/Tree.h ../openvdb/util/Formats.h \
+  ../openvdb/util/logging.h ../openvdb/tree/RootNode.h \
+  ../openvdb/io/Compression.h ../openvdb/util/NodeMasks.h \
+  ../openvdb/tree/InternalNode.h ../openvdb/tree/Iterator.h \
+  ../openvdb/tree/NodeUnion.h ../openvdb/tree/LeafNode.h \
+  ../openvdb/tree/LeafNodeBool.h ../openvdb/tree/LeafNodeMask.h \
+  ../openvdb/tree/TreeIterator.h ../openvdb/tree/ValueAccessor.h \
+  ../openvdb/metadata/MetaMap.h io/File.h ../openvdb/io/Archive.h \
+  ../openvdb/io/GridDescriptor.h
+util/Formats.o: util/Formats.cc util/Formats.h ../openvdb/version.h \
+  Platform.h PlatformConfig.h
+util/Util.o: util/Util.cc util/Util.h ../openvdb/Types.h version.h \
+  Platform.h PlatformConfig.h ../openvdb/math/Math.h \
+  ../openvdb/math/BBox.h ../openvdb/math/Vec3.h ../openvdb/Exceptions.h \
+  ../openvdb/math/Tuple.h ../openvdb/math/Quat.h ../openvdb/math/Mat.h \
+  ../openvdb/math/Mat3.h ../openvdb/math/Vec2.h ../openvdb/math/Vec4.h \
+  ../openvdb/math/Mat4.h ../openvdb/math/Coord.h ../openvdb/tree/Tree.h \
+  ../openvdb/metadata/Metadata.h ../openvdb/util/Name.h \
+  ../openvdb/util/Formats.h ../openvdb/util/logging.h \
+  ../openvdb/tree/RootNode.h ../openvdb/io/Compression.h \
+  ../openvdb/io/io.h ../openvdb/util/NodeMasks.h \
+  ../openvdb/tree/InternalNode.h ../openvdb/tree/Iterator.h \
+  ../openvdb/tree/NodeUnion.h ../openvdb/tree/LeafNode.h \
+  ../openvdb/tree/LeafNodeBool.h ../openvdb/tree/LeafNodeMask.h \
+  ../openvdb/tree/TreeIterator.h ../openvdb/tree/ValueAccessor.h \
+  ../openvdb/tools/ValueTransformer.h ../openvdb/Grid.h \
+  ../openvdb/math/Transform.h ../openvdb/math/Maps.h \
+  ../openvdb/metadata/MetaMap.h ../openvdb/tools/Prune.h \
+  ../openvdb/tree/NodeManager.h
+cmd/openvdb_print/main.o: cmd/openvdb_print/main.cc ../openvdb/openvdb.h \
+  Platform.h PlatformConfig.h Types.h version.h ../openvdb/math/Math.h \
+  ../openvdb/math/BBox.h ../openvdb/math/Vec3.h ../openvdb/Exceptions.h \
+  ../openvdb/math/Tuple.h ../openvdb/math/Quat.h ../openvdb/math/Mat.h \
+  ../openvdb/math/Mat3.h ../openvdb/math/Vec2.h ../openvdb/math/Vec4.h \
+  ../openvdb/math/Mat4.h ../openvdb/math/Coord.h Metadata.h \
+  ../openvdb/metadata/Metadata.h ../openvdb/util/Name.h \
+  ../openvdb/metadata/StringMetadata.h math/Maps.h ../openvdb/io/io.h \
+  math/Transform.h Grid.h ../openvdb/tree/Tree.h \
+  ../openvdb/util/Formats.h ../openvdb/util/logging.h \
+  ../openvdb/tree/RootNode.h ../openvdb/io/Compression.h \
+  ../openvdb/util/NodeMasks.h ../openvdb/tree/InternalNode.h \
+  ../openvdb/tree/Iterator.h ../openvdb/tree/NodeUnion.h \
+  ../openvdb/tree/LeafNode.h ../openvdb/tree/LeafNodeBool.h \
+  ../openvdb/tree/LeafNodeMask.h ../openvdb/tree/TreeIterator.h \
+  ../openvdb/tree/ValueAccessor.h ../openvdb/metadata/MetaMap.h \
+  io/File.h ../openvdb/io/Archive.h ../openvdb/io/GridDescriptor.h
+cmd/openvdb_render/main.o: cmd/openvdb_render/main.cc \
+  ../openvdb/openvdb.h Platform.h PlatformConfig.h Types.h version.h \
+  ../openvdb/math/Math.h ../openvdb/math/BBox.h ../openvdb/math/Vec3.h \
+  ../openvdb/Exceptions.h ../openvdb/math/Tuple.h ../openvdb/math/Quat.h \
+  ../openvdb/math/Mat.h ../openvdb/math/Mat3.h ../openvdb/math/Vec2.h \
+  ../openvdb/math/Vec4.h ../openvdb/math/Mat4.h ../openvdb/math/Coord.h \
+  Metadata.h ../openvdb/metadata/Metadata.h ../openvdb/util/Name.h \
+  ../openvdb/metadata/StringMetadata.h math/Maps.h ../openvdb/io/io.h \
+  math/Transform.h Grid.h ../openvdb/tree/Tree.h \
+  ../openvdb/util/Formats.h ../openvdb/util/logging.h \
+  ../openvdb/tree/RootNode.h ../openvdb/io/Compression.h \
+  ../openvdb/util/NodeMasks.h ../openvdb/tree/InternalNode.h \
+  ../openvdb/tree/Iterator.h ../openvdb/tree/NodeUnion.h \
+  ../openvdb/tree/LeafNode.h ../openvdb/tree/LeafNodeBool.h \
+  ../openvdb/tree/LeafNodeMask.h ../openvdb/tree/TreeIterator.h \
+  ../openvdb/tree/ValueAccessor.h ../openvdb/metadata/MetaMap.h \
+  io/File.h ../openvdb/io/Archive.h ../openvdb/io/GridDescriptor.h \
+  ../openvdb/tools/RayIntersector.h ../openvdb/math/DDA.h \
+  ../openvdb/math/Ray.h ../openvdb/math/Stencils.h \
+  ../openvdb/math/FiniteDifference.h ../openvdb/tools/Morphology.h \
+  ../openvdb/tree/LeafManager.h ../openvdb/tools/Prune.h \
+  ../openvdb/tree/NodeManager.h ../openvdb/tools/ValueTransformer.h \
+  ../openvdb/tools/RayTracer.h ../openvdb/tools/Interpolation.h
+cmd/openvdb_view/main.o: cmd/openvdb_view/main.cc openvdb_viewer/Viewer.h \
+  ../openvdb/openvdb.h Platform.h PlatformConfig.h Types.h version.h \
+  ../openvdb/math/Math.h ../openvdb/math/BBox.h ../openvdb/math/Vec3.h \
+  ../openvdb/Exceptions.h ../openvdb/math/Tuple.h ../openvdb/math/Quat.h \
+  ../openvdb/math/Mat.h ../openvdb/math/Mat3.h ../openvdb/math/Vec2.h \
+  ../openvdb/math/Vec4.h ../openvdb/math/Mat4.h ../openvdb/math/Coord.h \
+  Metadata.h ../openvdb/metadata/Metadata.h ../openvdb/util/Name.h \
+  ../openvdb/metadata/StringMetadata.h math/Maps.h ../openvdb/io/io.h \
+  math/Transform.h Grid.h ../openvdb/tree/Tree.h \
+  ../openvdb/util/Formats.h ../openvdb/util/logging.h \
+  ../openvdb/tree/RootNode.h ../openvdb/io/Compression.h \
+  ../openvdb/util/NodeMasks.h ../openvdb/tree/InternalNode.h \
+  ../openvdb/tree/Iterator.h ../openvdb/tree/NodeUnion.h \
+  ../openvdb/tree/LeafNode.h ../openvdb/tree/LeafNodeBool.h \
+  ../openvdb/tree/LeafNodeMask.h ../openvdb/tree/TreeIterator.h \
+  ../openvdb/tree/ValueAccessor.h ../openvdb/metadata/MetaMap.h \
+  io/File.h ../openvdb/io/Archive.h ../openvdb/io/GridDescriptor.h

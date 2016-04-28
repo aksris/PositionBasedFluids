@@ -184,7 +184,8 @@ void Viewer::display(){
     fluid->genParticles(scene.particle_separation, scene.particleBounds.x, scene.particleBounds.y, scene.particleBounds.z);
     Camera camera;
     //construct mac grid
-
+    int counter = 0;
+    int csome = 0;
     double lastTime = glfwGetTime();
     do{
         // Clear the screen
@@ -195,7 +196,7 @@ void Viewer::display(){
         lastTime = currentTime;
 
         delta = 0.1f;
-
+        positions.clear();
         camera.computeMatricesFromInputs(window);
         glm::mat4 ProjectionMatrixParticles = camera.getProjectionMatrix();
         glm::mat4 ViewMatrixParticles = camera.getViewMatrix();
@@ -210,15 +211,17 @@ void Viewer::display(){
         //apply gravity forces and update pos
         for (int i = 0; i < fluid->ParticlesContainer.size(); ++i){
             fluid->ApplyForces(fluid->ParticlesContainer[i], delta * 0.5f);
+            fluid->CalculateViscosityForce(fluid->ParticlesContainer[i], delta * 0.5f);
         }
         for(Particle &p : fluid->ParticlesContainer){
             p.pos[0] = p.pos[0] < -fluid->uGrid.dimensions[0] / 2 ? -fluid->uGrid.dimensions[0] / 2 : p.pos[0];
-            p.pos[1] = p.pos[1] < -fluid->uGrid.dimensions[1] / 2 ? -fluid->uGrid.dimensions[1] / 2 : p.pos[1];
-            p.pos[2] = p.pos[2] < -fluid->uGrid.dimensions[2] / 2 ? -fluid->uGrid.dimensions[2] / 2 : p.pos[2];
+                        p.pos[1] = p.pos[1] < -fluid->uGrid.dimensions[1] / 2 ? -fluid->uGrid.dimensions[1] / 2 : p.pos[1];
+                        p.pos[2] = p.pos[2] < -fluid->uGrid.dimensions[2] / 2 ? -fluid->uGrid.dimensions[2] / 2 : p.pos[2];
 
-            p.pos[0] = p.pos[0] > fluid->uGrid.dimensions[0] / 2 ? fluid->uGrid.dimensions[0] / 2 - 1 : p.pos[0];
-            p.pos[1] = p.pos[1] > fluid->uGrid.dimensions[1] / 2 ? fluid->uGrid.dimensions[1] / 2 - 1 : p.pos[1];
-            p.pos[2] = p.pos[2] > fluid->uGrid.dimensions[2] / 2 ? fluid->uGrid.dimensions[2] / 2 - 1 : p.pos[2];
+                        p.pos[0] = p.pos[0] > fluid->uGrid.dimensions[0] / 2 ? fluid->uGrid.dimensions[0] / 2 - 1 : p.pos[0];
+                        p.pos[1] = p.pos[1] > fluid->uGrid.dimensions[1] / 2 ? fluid->uGrid.dimensions[1] / 2 - 1 : p.pos[1];
+                        p.pos[2] = p.pos[2] > fluid->uGrid.dimensions[2] / 2 ? fluid->uGrid.dimensions[2] / 2 - 1 : p.pos[2];
+
         }
         fluid->uGrid.update(fluid->ParticlesContainer);
         for(int j = 0; j < fluid->ParticlesContainer.size(); ++j){
@@ -266,10 +269,47 @@ void Viewer::display(){
             g_particule_color_data[4*ParticlesCount+1] = p.g;
             g_particule_color_data[4*ParticlesCount+2] = p.b;
             g_particule_color_data[4*ParticlesCount+3] = p.a;
-
+            positions.push_back(openvdb::Vec3f(p.pos.x,p.pos.y,p.pos.z));
             ParticlesCount++;
 
         }
+
+        using namespace openvdb::tools;
+
+        // Initialize the OpenVDB and OpenVDB Points library.  This must be called at least
+        // once per program and may safely be called multiple times.
+        openvdb::initialize();
+        openvdb::points::initialize();
+
+
+        // Create a linear transform with voxel size of 10.0
+        const float voxelSize = 10.0f;
+        openvdb::math::Transform::Ptr transform = openvdb::math::Transform::createLinearTransform();
+
+        // Create the PointDataGrid, position attribute is mandatory
+        PointDataGrid::Ptr pointDataGrid = createPointDataGrid<PointDataGrid>(
+                    positions, TypedAttributeArray<openvdb::Vec3f>::attributeType(), *transform);
+
+
+#ifdef DEBUG
+        // Output leaf nodes
+        std::cout << "Leaf Nodes: " << pointDataGrid->tree().leafCount() << std::endl;
+
+        // Output point count
+        std::cout << "Point Count: " << pointCount(pointDataGrid->tree()) << std::endl;
+#endif
+        // Create a VDB file object.
+        string file_name = "pbf_";
+        string ext = ".vdb";
+        openvdb::io::File file(file_name+std::to_string(counter)+ext);
+        // Add the grid pointer to a container.
+        openvdb::GridPtrVec grids;
+        grids.push_back(pointDataGrid);
+        // Write out the contents of the container.
+//        file.write(grids);
+        file.close();
+        counter++;
+
        int MaxParticles = fluid->ParticlesContainer.size();
        glBindBuffer(GL_ARRAY_BUFFER, particles_position_buffer);
        glBufferData(GL_ARRAY_BUFFER, MaxParticles * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
@@ -321,8 +361,10 @@ void Viewer::display(){
         // Swap buffers
         glfwSwapBuffers(window);
         glfwPollEvents();
+        csome++;
+
     }while( (glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS ) &&
-            glfwWindowShouldClose(window) == 0);
+            glfwWindowShouldClose(window) == 0 && csome < 100);
     glfwTerminate();
 }
 

@@ -2,7 +2,6 @@
 //  fluidSolver.cpp
 //  Thanda
 
-
 #include "fluidSolver.hpp"
 Particle::Particle(){
     pos = glm::vec3(0.f, 0.f, 0.f);
@@ -63,6 +62,7 @@ void FluidSolver::genParticles(float particle_separation, float boundx, float bo
         for(float j = 0; j < boundy ; j+= particle_separation){
             for(float k = 0; k <boundz ; k+= particle_separation){
                 p.pos = glm::vec3(i, j, k);
+                p.mass = 0.125f;
                 ParticlesContainer.push_back(p);
             }
         }

@@ -165,7 +165,7 @@ boost
 
             protected:
 
-            ~error_info_container() throw()
+            virtual ~error_info_container() throw()
                 {
                 }
             };

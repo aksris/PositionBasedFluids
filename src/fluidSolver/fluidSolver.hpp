@@ -9,8 +9,6 @@
 
 #include <vector>
 #include <algorithm>
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/norm.hpp>
@@ -55,6 +53,7 @@ public:
     void sortParticles();
     void particlesInit();
     void genParticles(float particle_separation, float boundx, float boundy, float boundz);
+
 
 };
 #endif /* fluidSolver_hpp */

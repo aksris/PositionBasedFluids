@@ -55,6 +55,8 @@ public:
     void FindNeighbors(Particle *p);
     vec3 GradientAtP(Particle* p);
     vec3 GradientAtN(Particle* n, Particle* p);
+    void CalculateViscosityForce(Particle& p, float del_t);
+    float ViscousLaplacian(const vec3 diff, float h);
     Grid uGrid;
 protected:
     float rDensity;

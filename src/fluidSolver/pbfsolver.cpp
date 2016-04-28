@@ -1,5 +1,7 @@
 #include "pbfsolver.h"
 
+#define MU_VISCOSITY 0.1f
+
 PBFSolver::PBFSolver(vec3 minBounds, vec3 maxBounds)
 {
     rDensity = 1000.f;
@@ -68,7 +70,9 @@ void PBFSolver::FindNeighbors(Particle *p){
                         std::vector<Particle *> &tmp_cell = uGrid(i, j, k)->particles;
                         //p->neighbors.insert( p->neighbors.end(), tmp_cell.begin(), tmp_cell.end() );
                         for (unsigned int q = 0; q < tmp_cell.size(); ++q) {
-                            p->neighbors.push_back(tmp_cell.at(q));
+                            if (tmp_cell.at(q) != p) {
+                                p->neighbors.push_back(tmp_cell.at(q));
+                            }
                         }
                     }
                 }
@@ -97,7 +101,7 @@ float PBFSolver::CalculateDensity(Particle *p, float h){
         totalDensity += p->mass * CalculatePoly6(r, h);
     }
     // this is because we have the current particle in the neighbor list, so we subtract the contribution to density
-    return totalDensity - CalculatePoly6(vec3(0.f), h);
+    return totalDensity;
 }
 
 vec3 PBFSolver::GradientAtN(Particle* n, Particle* p){
@@ -114,7 +118,7 @@ vec3 PBFSolver::GradientAtP(Particle* p){
         totalGradientConstraint += CalculateGradSpiky(r, h);
     }
     // this is because we have the current particle in the neighbor list, so we subtract the contribution to density
-    return 1.f / rDensity * (totalGradientConstraint - CalculateGradSpiky(vec3(0.f), h));
+    return 1.f / rDensity * (totalGradientConstraint );
 }
 
 void PBFSolver::CalculateLagrangeMultiplier(Particle* p){
@@ -162,5 +166,28 @@ vec3 PBFSolver::CalculateDeltaP(Particle *p){
             del_p -= (p->lambda + p->neighbors[j]->lambda + 0.f*CalculateSCorr(r, h, 0.1f, 4)) * gradC_j;
     }
     return del_p;
+}
+
+
+float PBFSolver::ViscousLaplacian(const vec3 diff, float h)
+{
+    float rad = length(diff);
+    return (45.f / M_PI) * (h - rad) / pow(h, 6);
+}
+
+
+void PBFSolver::CalculateViscosityForce(Particle& p, float del_t)
+{
+    float KERNEL_RAD = 1.001f;
+    vec3 force(0.f);
+    for(Particle* n : p.neighbors)
+    {
+        vec3 tmp = (n->speed - p.speed) * p.mass * ViscousLaplacian(p.pos - n->pos, KERNEL_RAD);
+        tmp *= (MU_VISCOSITY / p.density) * p.mass;
+        force += tmp;
+
+    }
+    p.speed += force * del_t;
+    p.pos_star = p.pos + p.speed * del_t;
 }
 

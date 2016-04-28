@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2012-2013 DreamWorks Animation LLC
+// Copyright (c) 2012-2016 DreamWorks Animation LLC
 //
 // All rights reserved. This software is distributed under the
 // Mozilla Public License 2.0 ( http://www.mozilla.org/MPL/2.0/ )
@@ -30,10 +30,10 @@
 //
 /// @file LeafManager.h
 ///
-/// A LeafManager manages a linear array of pointers to a given tree's
+/// @brief A LeafManager manages a linear array of pointers to a given tree's
 /// leaf nodes, as well as optional auxiliary buffers (one or more per leaf)
 /// that can be swapped with the leaf nodes' voxel data buffers.
-/// The leaf array is useful for multithreaded computations over
+/// @details The leaf array is useful for multithreaded computations over
 /// leaf voxels in a tree with static topology but varying voxel values.
 /// The auxiliary buffers are convenient for temporal integration.
 /// Efficient methods are provided for multithreaded swapping and synching
@@ -45,8 +45,14 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include <boost/mpl/if.hpp>
+#include <boost/type_traits/is_const.hpp>
+#include <boost/type_traits/is_pointer.hpp>
+#include <boost/type_traits/is_same.hpp>
+#include <boost/type_traits/remove_pointer.hpp>
 #include <tbb/blocked_range.h>
 #include <tbb/parallel_for.h>
+#include <tbb/parallel_reduce.h>
 #include <openvdb/Types.h>
 #include "TreeIterator.h" // for CopyConstness
 
@@ -82,7 +88,7 @@ struct LeafManagerImpl
     typedef typename ManagerT::BufferType BufT;
 
     static inline void doSwapLeafBuffer(const RangeT& r, size_t auxBufferIdx,
-        LeafT** leafs, BufT* bufs, size_t bufsPerLeaf)
+                                        LeafT** leafs, BufT* bufs, size_t bufsPerLeaf)
     {
         for (size_t n = r.begin(), m = r.end(), N = bufsPerLeaf; n != m; ++n) {
             leafs[n]->swap(bufs[n * N + auxBufferIdx]);
@@ -110,12 +116,16 @@ class LeafManager
 {
 public:
     typedef TreeT                                                      TreeType;
+    typedef typename TreeT::ValueType                                  ValueType;
+    typedef typename TreeT::RootNodeType                               RootNodeType;
     typedef typename TreeType::LeafNodeType                            NonConstLeafType;
     typedef typename CopyConstness<TreeType, NonConstLeafType>::Type   LeafType;
+    typedef LeafType                                                   LeafNodeType;
     typedef typename leafmgr::TreeTraits<TreeT>::LeafIterType          LeafIterType;
     typedef typename LeafType::Buffer                                  NonConstBufferType;
     typedef typename CopyConstness<TreeType, NonConstBufferType>::Type BufferType;
     typedef tbb::blocked_range<size_t>                                 RangeType;//leaf index range
+    static const Index DEPTH = 2;//root + leafs
 
     static const bool IsConstTree = leafmgr::TreeTraits<TreeT>::IsConstTree;
 
@@ -147,6 +157,7 @@ public:
             }
             /// Return the index into the leaf array of the current leaf node.
             size_t pos() const { return mPos; }
+            /// Return @c true if the position of this iterator is in a valid range.
             bool isValid() const { return mPos>=mRange.mBegin && mPos<=mRange.mEnd; }
             /// Return @c true if this iterator is not yet exhausted.
             bool test() const { return mPos < mRange.mEnd; }
@@ -166,8 +177,13 @@ public:
             size_t mPos;
         };// end Iterator
 
-        LeafRange(size_t begin, size_t end, const LeafManager& leafManager, size_t grainSize=1):
-            mEnd(end), mBegin(begin), mGrainSize(grainSize), mLeafManager(leafManager) {}
+        LeafRange(size_t begin, size_t end, const LeafManager& leafManager, size_t grainSize=1)
+            : mEnd(end)
+            , mBegin(begin)
+            , mGrainSize(grainSize)
+            , mLeafManager(leafManager)
+        {
+        }
 
         Iterator begin() const {return Iterator(*this, mBegin);}
 
@@ -183,9 +199,13 @@ public:
 
         bool is_divisible() const {return mGrainSize < this->size();}
 
-        LeafRange(LeafRange& r, tbb::split):
-            mEnd(r.mEnd), mBegin(doSplit(r)), mGrainSize(r.mGrainSize),
-              mLeafManager(r.mLeafManager) {}
+        LeafRange(LeafRange& r, tbb::split)
+            : mEnd(r.mEnd)
+            , mBegin(doSplit(r))
+            , mGrainSize(r.mGrainSize)
+            , mLeafManager(r.mLeafManager)
+        {
+        }
 
     private:
         size_t mEnd, mBegin, mGrainSize;
@@ -202,34 +222,54 @@ public:
 
     /// @brief Constructor from a tree reference and an auxiliary buffer count
     /// (default is no auxiliary buffers)
-    LeafManager(TreeType& tree, size_t auxBuffersPerLeaf=0, bool serial=false):
-        mTree(&tree),
-        mLeafCount(0),
-        mAuxBufferCount(0),
-        mAuxBuffersPerLeaf(auxBuffersPerLeaf),
-        mLeafs(NULL),
-        mAuxBuffers(NULL),
-        mTask(0),
-        mIsMaster(true)
+    LeafManager(TreeType& tree, size_t auxBuffersPerLeaf=0, bool serial=false)
+        : mTree(&tree)
+        , mLeafCount(0)
+        , mAuxBufferCount(0)
+        , mAuxBuffersPerLeaf(auxBuffersPerLeaf)
+        , mLeafs(NULL)
+        , mAuxBuffers(NULL)
+        , mTask(0)
+        , mIsMaster(true)
     {
         this->rebuild(serial);
+    }
+
+    /// @brief Constructor from a tree reference and an existing array
+    /// of pointers to LeafNodes from said tree. This c-tor is only
+    /// intended for experts that try to squice out a
+    LeafManager(TreeType& tree, LeafType** begin, LeafType** end,
+                size_t auxBuffersPerLeaf=0, bool serial=false)
+        : mTree(&tree)
+        , mLeafCount(end-begin)
+        , mAuxBufferCount(0)
+        , mAuxBuffersPerLeaf(auxBuffersPerLeaf)
+        , mLeafs(new LeafType*[mLeafCount])
+        , mAuxBuffers(NULL)
+        , mTask(0)
+        , mIsMaster(true)
+    {
+        size_t n = mLeafCount; 
+        LeafType **target = mLeafs, **source = begin;
+        while (n--) *target++ = *source++;
+        if (auxBuffersPerLeaf) this->initAuxBuffers(serial);
     }
 
     /// Shallow copy constructor called by tbb::parallel_for() threads
     ///
     /// @note This should never get called directly
-    LeafManager(const LeafManager& other):
-        mTree(other.mTree),
-        mLeafCount(other.mLeafCount),
-        mAuxBufferCount(other.mAuxBufferCount),
-        mAuxBuffersPerLeaf(other.mAuxBuffersPerLeaf),
-        mLeafs(other.mLeafs),
-        mAuxBuffers(other.mAuxBuffers),
-        mTask(other.mTask),
-        mIsMaster(false)
+    LeafManager(const LeafManager& other)
+        : mTree(other.mTree)
+        , mLeafCount(other.mLeafCount)
+        , mAuxBufferCount(other.mAuxBufferCount)
+        , mAuxBuffersPerLeaf(other.mAuxBuffersPerLeaf)
+        , mLeafs(other.mLeafs)
+        , mAuxBuffers(other.mAuxBuffers)
+        , mTask(other.mTask)
+        , mIsMaster(false)
     {
     }
-
+    
     virtual ~LeafManager()
     {
         if (mIsMaster) {
@@ -294,8 +334,17 @@ public:
     /// Return the number of leaf nodes.
     size_t leafCount() const { return mLeafCount; }
 
-    /// Return the tree associated with this manager.
+    /// Return a const reference to tree associated with this manager.
+    const TreeType& tree() const { return *mTree; }
+
+    /// Return a reference to the tree associated with this manager.
     TreeType& tree() { return *mTree; }
+
+    /// Return a const reference to root node associated with this manager.
+    const RootNodeType& root() const { return mTree->root(); }
+
+    /// Return a reference to the root node associated with this manager.
+    RootNodeType& root() { return mTree->root(); }
 
     /// Return @c true if the tree associated with this manager is immutable.
     bool isConstTree() const { return this->IsConstTree; }
@@ -319,7 +368,7 @@ public:
         assert(leafIdx < mLeafCount);
         assert(bufferIdx == 0 || bufferIdx - 1 < mAuxBuffersPerLeaf);
         return bufferIdx == 0 ? mLeafs[leafIdx]->buffer()
-            : mAuxBuffers[leafIdx * mAuxBuffersPerLeaf + bufferIdx - 1];
+             : mAuxBuffers[leafIdx * mAuxBuffersPerLeaf + bufferIdx - 1];
     }
 
     /// @brief Return a @c tbb::blocked_range of leaf array indices.
@@ -401,14 +450,19 @@ public:
     }
 
     /// @brief   Threaded method that applies a user-supplied functor
-    ///          to each leaf node in the LeafManager
+    ///          to each leaf node in the LeafManager.
+    ///
+    /// @details The user-supplied functor needs to define the methods
+    ///          required for tbb::parallel_for.
     ///
     /// @param op        user-supplied functor, see examples for interface details.
     /// @param threaded  optional toggle to disable threading, on by default.
     /// @param grainSize optional parameter to specify the grainsize
     ///                  for threading, one by default.
     ///
-    /// @warning The functor object is deep-copied to create TBB tasks.
+    /// @warning The functor object is deep-copied to create TBB tasks. 
+    ///          This allows the function to use non-thread-safe members
+    ///          like a ValueAccessor.
     ///
     /// @par Example:
     /// @code
@@ -423,7 +477,7 @@ public:
     ///     template <typename LeafNodeType>
     ///     void operator()(LeafNodeType &lhsLeaf, size_t) const
     ///     {
-    ///         const LeafNodeType * rhsLeaf = mRhsTreeAcc.probeConstLeaf(lhsLeaf.origin());
+    ///         const LeafNodeType *rhsLeaf = mRhsTreeAcc.probeConstLeaf(lhsLeaf.origin());
     ///         if (rhsLeaf) {
     ///             typename LeafNodeType::ValueOnIter iter = lhsLeaf.beginValueOn();
     ///             for (; iter; ++iter) {
@@ -431,7 +485,6 @@ public:
     ///             }
     ///         }
     ///     }
-    /// private:
     ///     Accessor mRhsTreeAcc;
     /// };
     ///
@@ -455,7 +508,6 @@ public:
     ///
     ///         // min ...
     ///     }
-    /// private:
     ///     LeafManagerType& mLeafs;
     /// };
     /// @endcode
@@ -464,6 +516,131 @@ public:
     {
         LeafTransformer<LeafOp> transform(op);
         transform.run(this->leafRange(grainSize), threaded);
+    }
+
+    /// @brief   Threaded method that applies a user-supplied functor
+    ///          to each leaf node in the LeafManager. Unlike foreach
+    ///          (defined above) this method performs a reduction on
+    ///          all the leaf nodes.
+    ///
+    /// @details The user-supplied functor needs to define the methods
+    ///          required for tbb::parallel_reduce.
+    ///
+    /// @param op        user-supplied functor, see examples for interface details.
+    /// @param threaded  optional toggle to disable threading, on by default.
+    /// @param grainSize optional parameter to specify the grainsize
+    ///                  for threading, one by default.
+    ///
+    /// @warning The functor object is deep-copied to create TBB tasks.
+    ///          This allows the function to use non-thread-safe members
+    ///          like a ValueAccessor.
+    ///
+    /// @par Example:
+    /// @code
+    /// // Functor to count the number of negative (active) leaf values 
+    /// struct CountOp
+    /// {
+    ///     CountOp() : mCounter(0) {}
+    ///     CountOp(const CountOp &other) : mCounter(other.mCounter) {}
+    ///     CountOp(const CountOp &other, tbb::split) : mCounter(0) {}
+    ///     template <typename LeafNodeType>
+    ///     void operator()(LeafNodeType &leaf, size_t)
+    ///     {
+    ///       typename LeafNodeType::ValueOnIter iter = leaf.beginValueOn();
+    ///       for (; iter; ++iter) if (*iter < 0.0f) ++mCounter;
+    ///     }
+    ///     void join(const CountOp &other) {mCounter += other.mCounter;}
+    ///     size_t mCounter; 
+    /// };
+    ///
+    /// // usage:
+    /// tree::LeafManager<FloatTree> leafNodes(tree);
+    /// MinValueOp min;
+    /// leafNodes.reduce(min);
+    /// std::cerr << "Number of negative active voxels = " << min.mCounter << std::endl;
+    ///
+    /// @endcode
+    template<typename LeafOp>
+    void reduce(LeafOp& op, bool threaded = true, size_t grainSize=1)
+    {
+        LeafReducer<LeafOp> transform(op);
+        transform.run(this->leafRange(grainSize), threaded);
+    }
+
+
+    /// @brief Insert pointers to nodes of the specified type into the array.
+    /// @details The type of node pointer is defined by the type
+    /// ArrayT::value_type. If the node type is a LeafNode the nodes
+    /// are inserted from this LeafManager, else of the corresponding tree.
+    template<typename ArrayT>
+    void getNodes(ArrayT& array)
+    {
+        typedef typename ArrayT::value_type T;
+        BOOST_STATIC_ASSERT(boost::is_pointer<T>::value);
+        typedef typename boost::mpl::if_<boost::is_const<typename boost::remove_pointer<T>::type>,
+            const LeafType, LeafType>::type LeafT;
+
+        OPENVDB_NO_UNREACHABLE_CODE_WARNING_BEGIN
+        if (boost::is_same<T, LeafT*>::value) {
+            array.resize(mLeafCount);
+            for (size_t i=0; i<mLeafCount; ++i) array[i] = reinterpret_cast<T>(mLeafs[i]);
+        } else {
+            mTree->getNodes(array);
+        }
+        OPENVDB_NO_UNREACHABLE_CODE_WARNING_END
+    }
+
+    /// @brief Insert node pointers of the specified type into the array.
+    /// @details The type of node pointer is defined by the type
+    /// ArrayT::value_type. If the node type is a LeafNode the nodes
+    /// are inserted from this LeafManager, else of the corresponding tree.
+    template<typename ArrayT>
+    void getNodes(ArrayT& array) const
+    {
+        typedef typename ArrayT::value_type T;
+        BOOST_STATIC_ASSERT(boost::is_pointer<T>::value);
+        BOOST_STATIC_ASSERT(boost::is_const<typename boost::remove_pointer<T>::type>::value);
+
+        OPENVDB_NO_UNREACHABLE_CODE_WARNING_BEGIN
+        if (boost::is_same<T, const LeafType*>::value) {
+            array.resize(mLeafCount);
+            for (size_t i=0; i<mLeafCount; ++i) array[i] = reinterpret_cast<T>(mLeafs[i]);
+        } else {
+            mTree->getNodes(array);
+        }
+        OPENVDB_NO_UNREACHABLE_CODE_WARNING_END
+    }
+
+    /// @brief Generate a linear array of pre-fix sums of offsets into the
+    /// active voxels in the leafs. So @a offsets[n]+m is the offset to the
+    /// mth active voxel in the nth leaf node (useful for
+    /// user-managed value buffers, e.g. in tools/LevelSetAdvect.h).
+    /// @return The total number of active values in the leaf nodes
+    /// @param offsets Array of pre-fix sums of offsets to active voxels
+    /// @param size      On input the size of @a offsets, and on ouput
+    ///                  the new size of @a offsets.
+    /// @param grainSize Optional parameter to specify the grainsize
+    ///                  for threading, one by default.
+    /// @details If @a offsets is NULL or @a size is smaller than the
+    /// total number of active voxels (the return value) then @a offsets
+    /// is re-allocated and @a size equals the total number of active voxels. 
+    size_t getPreFixSum(size_t*& offsets, size_t& size, size_t grainSize=1) const
+    {
+        if (offsets == NULL || size < mLeafCount) {
+            delete [] offsets;
+            offsets = new size_t[mLeafCount];
+            size = mLeafCount;
+        }
+        size_t prefix = 0;
+        if ( grainSize > 0 ) {
+            PreFixSum tmp(this->leafRange( grainSize ), offsets, prefix);
+        } else {// serial
+            for (size_t i=0; i<mLeafCount; ++i) {
+                offsets[i] = prefix;
+                prefix += mLeafs[i]->onVoxelCount();
+            }
+        }
+        return prefix;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -476,9 +653,18 @@ public:
         else OPENVDB_THROW(ValueError, "task is undefined");
     }
 
+  private:
 
+    // This a simple wrapper for a c-style array so it mimics the api
+    // of a std container, e.g. std::vector or std::deque, and can be
+    // passed to Tree::getNodes().
+    struct MyArray {
+        typedef LeafType* value_type;//required by Tree::getNodes
+        value_type* ptr;
+        MyArray(value_type* array) : ptr(array) {}
+        void push_back(value_type leaf) { *ptr++ = leaf; }//required by Tree::getNodes
+    };
 
-private:
     void initLeafArray()
     {
         const size_t leafCount = mTree->leafCount();
@@ -487,8 +673,8 @@ private:
             mLeafs = (leafCount == 0) ? NULL : new LeafType*[leafCount];
             mLeafCount = leafCount;
         }
-        LeafIterType iter = mTree->beginLeaf();
-        for (size_t n = 0; n != leafCount; ++n, ++iter) mLeafs[n] = iter.getLeaf();
+        MyArray a(mLeafs);
+        mTree->getNodes(a);
     }
 
     void initAuxBuffers(bool serial)
@@ -556,30 +742,80 @@ private:
     }
 
     /// @brief Private member class that applies a user-defined
-    /// functor to all the leaf nodes.
+    /// functor to perform parallel_for on all the leaf nodes.
     template<typename LeafOp>
     struct LeafTransformer
     {
-        LeafTransformer(const LeafOp& leafOp) : mLeafOp(leafOp) {}
-        void run(const LeafRange& range, bool threaded = true)
+        LeafTransformer(const LeafOp &leafOp) : mLeafOp(leafOp)
+        {
+        }
+        void run(const LeafRange &range, bool threaded) const
         {
             threaded ? tbb::parallel_for(range, *this) : (*this)(range);
         }
-        void operator()(const LeafRange& range) const
+        void operator()(const LeafRange &range) const
         {
             for (typename LeafRange::Iterator it = range.begin(); it; ++it) mLeafOp(*it, it.pos());
         }
         const LeafOp mLeafOp;
-    };
+    };// LeafTransformer
+    
+    /// @brief Private member class that applies a user-defined
+    /// functor to perform parallel_reduce on all the leaf nodes.
+    template<typename LeafOp>
+    struct LeafReducer
+    {
+        LeafReducer(LeafOp &leafOp) : mLeafOp(&leafOp), mOwnsOp(false)
+        {
+        }
+        LeafReducer(const LeafReducer &other, tbb::split)
+            : mLeafOp(new LeafOp(*(other.mLeafOp), tbb::split())), mOwnsOp(true)
+        {
+        }
+        ~LeafReducer() { if (mOwnsOp) delete mLeafOp; }
+        void run(const LeafRange& range, bool threaded)
+        {
+            threaded ? tbb::parallel_reduce(range, *this) : (*this)(range);
+        }
+        void operator()(const LeafRange& range)
+        {
+            LeafOp &op = *mLeafOp;//local registry
+            for (typename LeafRange::Iterator it = range.begin(); it; ++it) op(*it, it.pos());
+        }
+        void join(const LeafReducer& other) { mLeafOp->join(*(other.mLeafOp)); }
+        LeafOp *mLeafOp;
+        const bool mOwnsOp;
+    };// LeafReducer
 
+    // Helper class to compute a pre-fix sum of offsets to active voxels
+    struct PreFixSum
+    {
+        PreFixSum(const LeafRange& r, size_t* offsets, size_t& prefix)
+            : mOffsets(offsets)
+        {
+            tbb::parallel_for( r, *this);
+            for (size_t i=0, leafCount = r.size(); i<leafCount; ++i) {
+                size_t tmp = offsets[i];
+                offsets[i] = prefix;
+                prefix += tmp;
+            }
+        }
+        inline void operator()(const LeafRange& r) const {
+            for (typename LeafRange::Iterator i = r.begin(); i; ++i) {
+                mOffsets[i.pos()] = i->onVoxelCount();
+            }
+        }
+        size_t* mOffsets;
+    };// PreFixSum
+    
     typedef typename boost::function<void (LeafManager*, const RangeType&)> FuncType;
 
-    TreeType*           mTree;
-    size_t              mLeafCount, mAuxBufferCount, mAuxBuffersPerLeaf;
-    LeafType**          mLeafs;//array of LeafNode pointers
-    NonConstBufferType* mAuxBuffers;//array of auxiliary buffers
-    FuncType            mTask;
-    const bool          mIsMaster;
+    TreeType*            mTree;
+    size_t               mLeafCount, mAuxBufferCount, mAuxBuffersPerLeaf;
+    LeafType**           mLeafs;//array of LeafNode pointers
+    NonConstBufferType*  mAuxBuffers;//array of auxiliary buffers
+    FuncType             mTask;
+    const bool           mIsMaster;
 };//end of LeafManager class
 
 
@@ -593,7 +829,7 @@ struct LeafManagerImpl<LeafManager<const TreeT> >
     typedef typename ManagerT::BufferType     BufT;
 
     static inline void doSwapLeafBuffer(const RangeT&, size_t /*auxBufferIdx*/,
-        LeafT**, BufT*, size_t /*bufsPerLeaf*/)
+                                        LeafT**, BufT*, size_t /*bufsPerLeaf*/)
     {
         // Buffers can't be swapped into const trees.
     }
@@ -605,6 +841,6 @@ struct LeafManagerImpl<LeafManager<const TreeT> >
 
 #endif // OPENVDB_TREE_LEAFMANAGER_HAS_BEEN_INCLUDED
 
-// Copyright (c) 2012-2013 DreamWorks Animation LLC
+// Copyright (c) 2012-2016 DreamWorks Animation LLC
 // All rights reserved. This software is distributed under the
 // Mozilla Public License 2.0 ( http://www.mozilla.org/MPL/2.0/ )
