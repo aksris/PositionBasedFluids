@@ -39,7 +39,7 @@ find_package(OpenGL REQUIRED)
 find_package(GLEW)
 find_library(GLFW_LIBRARY "glfw3" HINTS ${GLFW_LIBRARY_DIR})
 find_library(JSONCPP "jsoncpp")
-find_library(TINYOBJ "tinyobjloader")
+#find_library(TINYOBJ "tinyobjloader")
 
 
 # OpenVDB
@@ -62,7 +62,7 @@ add_definitions(
         -D_CRT_SECURE_NO_WARNINGS
 )
 
-set(CORE_LIBS ${GLFW_LIBRARY} ${GLUT_LIBRARY} ${GLEW_LIBRARY} ${JSONCPP} ${OPENGL_LIBRARY} ${TINYOBJ})
+set(CORE_LIBS ${GLFW_LIBRARY} ${GLUT_LIBRARY} ${GLEW_LIBRARY} ${JSONCPP} ${OPENGL_LIBRARY})
 set(CORE_LIBS  ${CORE_LIBS} ${OPENVDB} ${OPENVDB_POINTS} ${VDBLIBS})
 
 # OSX-specific hacks/fixes

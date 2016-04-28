@@ -150,6 +150,7 @@ void Viewer::display(){
     glGenVertexArrays(1, &VertexArrayID);
     glBindVertexArray(VertexArrayID);
 
+    // Create solver instance.
     PBFSolver* fluid = new PBFSolver(scene.containerBoundsMin, scene.containerBoundsMax);
 
     static GLfloat* g_particule_position_size_data = new GLfloat[fluid->MaxParticles * 4];
@@ -181,7 +182,9 @@ void Viewer::display(){
     // Initialize with empty (NULL) buffer : it will be updated later, each frame.
     glBufferData(GL_ARRAY_BUFFER, fluid->MaxParticles * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
 
+    // Generate particles.
     fluid->genParticles(scene.particle_separation, scene.particleBounds.x, scene.particleBounds.y, scene.particleBounds.z);
+
     Camera camera;
     //construct mac grid
     int counter = 0;
@@ -211,18 +214,10 @@ void Viewer::display(){
         //apply gravity forces and update pos
         for (int i = 0; i < fluid->ParticlesContainer.size(); ++i){
             fluid->ApplyForces(fluid->ParticlesContainer[i], delta * 0.5f);
-            fluid->CalculateViscosityForce(fluid->ParticlesContainer[i], delta * 0.5f);
+            //fluid->CalculateViscosityForce(fluid->ParticlesContainer[i], delta * 0.5f);
         }
-        for(Particle &p : fluid->ParticlesContainer){
-            p.pos[0] = p.pos[0] < -fluid->uGrid.dimensions[0] / 2 ? -fluid->uGrid.dimensions[0] / 2 : p.pos[0];
-                        p.pos[1] = p.pos[1] < -fluid->uGrid.dimensions[1] / 2 ? -fluid->uGrid.dimensions[1] / 2 : p.pos[1];
-                        p.pos[2] = p.pos[2] < -fluid->uGrid.dimensions[2] / 2 ? -fluid->uGrid.dimensions[2] / 2 : p.pos[2];
 
-                        p.pos[0] = p.pos[0] > fluid->uGrid.dimensions[0] / 2 ? fluid->uGrid.dimensions[0] / 2 - 1 : p.pos[0];
-                        p.pos[1] = p.pos[1] > fluid->uGrid.dimensions[1] / 2 ? fluid->uGrid.dimensions[1] / 2 - 1 : p.pos[1];
-                        p.pos[2] = p.pos[2] > fluid->uGrid.dimensions[2] / 2 ? fluid->uGrid.dimensions[2] / 2 - 1 : p.pos[2];
-
-        }
+        // Update simulation.
         fluid->uGrid.update(fluid->ParticlesContainer);
         for(int j = 0; j < fluid->ParticlesContainer.size(); ++j){
             fluid->FindNeighbors(&(fluid->ParticlesContainer[j]));
@@ -250,6 +245,17 @@ void Viewer::display(){
             fluid->ParticlesContainer[i].pos = fluid->ParticlesContainer[i].pos_star;
         }
 
+        // Bounds clamping
+        for(Particle &p : fluid->ParticlesContainer){
+            p.pos[0] = p.pos[0] < -fluid->uGrid.dimensions[0] / 2 ? -fluid->uGrid.dimensions[0] / 2 : p.pos[0];
+                        p.pos[1] = p.pos[1] < -fluid->uGrid.dimensions[1] / 2 ? -fluid->uGrid.dimensions[1] / 2 : p.pos[1];
+                        p.pos[2] = p.pos[2] < -fluid->uGrid.dimensions[2] / 2 ? -fluid->uGrid.dimensions[2] / 2 : p.pos[2];
+
+                        p.pos[0] = p.pos[0] > fluid->uGrid.dimensions[0] / 2 ? fluid->uGrid.dimensions[0] / 2 - 1 : p.pos[0];
+                        p.pos[1] = p.pos[1] > fluid->uGrid.dimensions[1] / 2 ? fluid->uGrid.dimensions[1] / 2 - 1 : p.pos[1];
+                        p.pos[2] = p.pos[2] > fluid->uGrid.dimensions[2] / 2 ? fluid->uGrid.dimensions[2] / 2 - 1 : p.pos[2];
+
+        }
 
         int ParticlesCount = 0;
         for(int i=0; i< fluid->ParticlesContainer.size(); i++){

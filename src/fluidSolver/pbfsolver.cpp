@@ -1,6 +1,6 @@
 #include "pbfsolver.h"
 
-#define MU_VISCOSITY 0.1f
+#define MU_VISCOSITY 0.2f
 
 PBFSolver::PBFSolver(vec3 minBounds, vec3 maxBounds)
 {
@@ -41,10 +41,11 @@ int Grid::flatIndex(int i, int j, int k) {
 }
 
 Cell* Grid::operator() (int i, int j, int k) {
-//    vec3 idx = getIndices(vec3(i,j,k));
     return cells[flatIndex(i, j, k)];
 }
 
+// Grid cells keep a list of the particles that they contain.
+// This function populates cells with the correct particles.
 void Grid::update( std::vector<Particle> &particles) {
     for (Particle &p : particles) {
         vec3 indices = getIndices(p.pos);
@@ -54,11 +55,12 @@ void Grid::update( std::vector<Particle> &particles) {
     }
 }
 
+// Clear all the grid cells
 void Grid::clear() {
     cells = std::vector<Cell *>(dimensions[0]*dimensions[1]*dimensions[2], new Cell());
 }
 
-//find all the neighbors of this particle. NOTE: this includes the current particle in consideration
+// Find all the neighbors of this particle.
 void PBFSolver::FindNeighbors(Particle *p){
     p->neighbors.clear();
     vec3 indices = uGrid.getIndices(p->pos);

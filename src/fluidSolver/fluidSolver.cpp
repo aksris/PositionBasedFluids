@@ -58,9 +58,10 @@ void FluidSolver::particlesInit(){
 
 void FluidSolver::genParticles(float particle_separation, float boundx, float boundy, float boundz){
     Particle p;
-    for(float i = 0; i < boundx; i+= particle_separation){
-        for(float j = 0; j < boundy ; j+= particle_separation){
-            for(float k = 0; k <boundz ; k+= particle_separation){
+
+    for(float i = -boundx/2; i < boundx/2; i+= particle_separation){
+        for(float j = -boundy/2; j < boundy/2; j+= particle_separation){
+            for(float k = -boundz/2; k <boundz/2; k+= particle_separation){
                 p.pos = glm::vec3(i, j, k);
                 p.mass = 0.125f;
                 ParticlesContainer.push_back(p);
