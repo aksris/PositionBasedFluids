@@ -2,11 +2,11 @@
 
 #define MU_VISCOSITY 0.02f
 #define MAX_ITER 5
-#define CELL_SIZE 0.1f
+#define CELL_SIZE 0.5f
 
 PBFSolver::PBFSolver(vec3 minBounds, vec3 maxBounds)
 {
-    rDensity = 1000.f;
+    rDensity = 0.9f;
     numParticles = ParticlesContainer.size();
     uGrid = Grid(minBounds, maxBounds, CELL_SIZE);
 }
@@ -49,15 +49,15 @@ void PBFSolver::handleBoundary() {
     for(Particle &p : ParticlesContainer){
         if (p.pos[0] < -x_dim || p.pos[0] > x_dim) {
             p.pos[0] = std::min(x_dim - offset, std::max(-x_dim + offset, p.pos[0]));
-            p.speed[0] *= -1;
+            p.speed[0] *= -0.7f;
         }
         if (p.pos[1] < -y_dim || p.pos[1] > y_dim) {
             p.pos[1] = std::min(y_dim - offset, std::max(-y_dim + offset, p.pos[1]));
-            p.speed[1] *= -1;
+            p.speed[1] *= -0.7f;
         }
         if (p.pos[2] < -z_dim || p.pos[2] > z_dim) {
             p.pos[2] = std::min(z_dim - offset, std::max(-z_dim + offset, p.pos[2]));
-            p.speed[2] *= -1;
+            p.speed[2] *= -0.7f;
         }
     }
 
@@ -160,9 +160,9 @@ vec3 CalculateGradSpiky(vec3 r, float h){
 
 // Given position in world space, return the index of the corresponding cell in grid space.
 ivec3 Grid::getIndices(const vec3 &pos) {
-    int i = (int)((pos[0] - minBounds[0]) / cellSize);
-    int j = (int)((pos[1] - minBounds[1]) / cellSize);
-    int k = (int)((pos[2] - minBounds[2]) / cellSize);
+    int i = std::min(std::max((int)((pos[0] - minBounds[0]) / cellSize), 0), (int)(dimensions[0] - 1.f));
+    int j = std::min(std::max((int)((pos[1] - minBounds[1]) / cellSize), 0), (int)(dimensions[1] - 1.f));
+    int k = std::min(std::max((int)((pos[2] - minBounds[2]) / cellSize), 0), (int)(dimensions[2] - 1.f));
     return ivec3(i, j, k);
 }
 
