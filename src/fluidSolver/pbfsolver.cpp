@@ -6,7 +6,7 @@
 
 PBFSolver::PBFSolver(vec3 minBounds, vec3 maxBounds)
 {
-    rDensity = 0.9f;
+    rDensity = 1.0f;
     numParticles = ParticlesContainer.size();
     uGrid = Grid(minBounds, maxBounds, CELL_SIZE);
 }
@@ -18,7 +18,7 @@ void PBFSolver::step(){
     for(Particle &p: ParticlesContainer){
         p.pos_star = vec3(0.f);
         p.old_pos = p.pos;
-        p.speed += p.accel * t_stp;
+        p.speed += p.accel /** t_stp*/;
         p.pos += p.speed * t_stp;
     }
     // Clear grid of particles.
@@ -49,15 +49,15 @@ void PBFSolver::handleBoundary() {
     for(Particle &p : ParticlesContainer){
         if (p.pos[0] < -x_dim || p.pos[0] > x_dim) {
             p.pos[0] = std::min(x_dim - offset, std::max(-x_dim + offset, p.pos[0]));
-            p.speed[0] *= -0.7f;
+            p.speed[0] *= -0.3f;
         }
         if (p.pos[1] < -y_dim || p.pos[1] > y_dim) {
             p.pos[1] = std::min(y_dim - offset, std::max(-y_dim + offset, p.pos[1]));
-            p.speed[1] *= -0.7f;
+            p.speed[1] *= -0.3f;
         }
         if (p.pos[2] < -z_dim || p.pos[2] > z_dim) {
             p.pos[2] = std::min(z_dim - offset, std::max(-z_dim + offset, p.pos[2]));
-            p.speed[2] *= -0.7f;
+            p.speed[2] *= -0.3f;
         }
     }
 
