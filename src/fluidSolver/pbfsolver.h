@@ -37,7 +37,7 @@ public:
 
     Cell* operator() (int i, int j, int k);
 
-    vec3 getIndices(const vec3 &pos);
+    ivec3 getIndices(const vec3 &pos);
     void update(std::vector<Particle> &particles);
     void clear();
     int flatIndex(int i, int j, int k);
@@ -58,6 +58,7 @@ public:
     vec3 GradientAtN(Particle* n, Particle* p);
     void CalculateViscosityForce(Particle& p, float del_t);
     float ViscousLaplacian(const vec3 diff, float h);
+    void handleBoundary();
 
     void step();
     vec3 SolveDensityConstraint(Particle *p);

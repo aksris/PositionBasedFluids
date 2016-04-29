@@ -183,7 +183,7 @@ void Viewer::display(){
     glBufferData(GL_ARRAY_BUFFER, fluid->MaxParticles * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
 
     // Generate particles.
-    fluid->genParticles(scene.particle_separation, scene.particleBounds.x, scene.particleBounds.y, scene.particleBounds.z, 0.00f);
+    fluid->genParticles(scene.particle_separation, scene.particleBounds.x, scene.particleBounds.y, scene.particleBounds.z, 0.01f);
 
     Camera camera;
     //construct mac grid
@@ -372,7 +372,7 @@ void Viewer::display(){
         csome++;
 
     }while( (glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS ) &&
-            glfwWindowShouldClose(window) == 0 && csome < 100);
+            glfwWindowShouldClose(window) == 0);
     glfwTerminate();
 }
 

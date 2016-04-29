@@ -61,6 +61,7 @@ void FluidSolver::particlesInit(){
 
 void FluidSolver::genParticles(float particle_separation, float boundx, float boundy, float boundz, float time_step){
     Particle p;
+    t_stp = time_step;
     float diam;
     for(float i = -boundx/2; i < boundx/2; i+= particle_separation){
         for(float j = -boundy/2; j < boundy/2; j+= particle_separation){

@@ -2,12 +2,13 @@
 
 #define MU_VISCOSITY 0.02f
 #define MAX_ITER 5
+#define CELL_SIZE 0.1f
 
 PBFSolver::PBFSolver(vec3 minBounds, vec3 maxBounds)
 {
     rDensity = 1000.f;
     numParticles = ParticlesContainer.size();
-    uGrid = Grid(minBounds, maxBounds, 1.f);
+    uGrid = Grid(minBounds, maxBounds, CELL_SIZE);
 }
 
 void PBFSolver::step(){
@@ -20,7 +21,11 @@ void PBFSolver::step(){
         p.speed += p.accel * t_stp;
         p.pos += p.speed * t_stp;
     }
-    //find all particles
+    // Clear grid of particles.
+    uGrid.clear();
+    // Update grid cells.
+    uGrid.update(ParticlesContainer);
+    //find all particle neighbors
     for(Particle &p: ParticlesContainer){
         FindNeighbors(&p);
     }
@@ -31,6 +36,31 @@ void PBFSolver::step(){
     }
     //add viscosity
     //boundary
+    handleBoundary();
+}
+
+void PBFSolver::handleBoundary() {
+            // Bounds clamping
+    float x_dim = uGrid.dimensions[0] / 2 * CELL_SIZE;
+    float y_dim = uGrid.dimensions[1] / 2 * CELL_SIZE;
+    float z_dim = uGrid.dimensions[2] / 2 * CELL_SIZE;
+    float offset = 0.001;
+    
+    for(Particle &p : ParticlesContainer){
+        if (p.pos[0] < -x_dim || p.pos[0] > x_dim) {
+            p.pos[0] = std::min(x_dim - offset, std::max(-x_dim + offset, p.pos[0]));
+            p.speed[0] *= -1;
+        }
+        if (p.pos[1] < -y_dim || p.pos[1] > y_dim) {
+            p.pos[1] = std::min(y_dim - offset, std::max(-y_dim + offset, p.pos[1]));
+            p.speed[1] *= -1;
+        }
+        if (p.pos[2] < -z_dim || p.pos[2] > z_dim) {
+            p.pos[2] = std::min(z_dim - offset, std::max(-z_dim + offset, p.pos[2]));
+            p.speed[2] *= -1;
+        }
+    }
+
 }
 
 void PBFSolver::ConstraintProjection(){
@@ -54,7 +84,8 @@ void PBFSolver::ConstraintProjection(){
 vec3 PBFSolver::SolveDensityConstraint(Particle *p){
     vec3 corr(0.f);
     for(Particle *n : p->neighbors){
-        vec3 grad_Cj = -n->mass / rDensity * GradW(p->pos - n->pos);
+        vec3 grad_w = GradW(p->pos - n->pos);
+        vec3 grad_Cj = grad_w * -n->mass / rDensity;
         corr -= (p->lambda + n->lambda) * grad_Cj;
     }
     return corr;
@@ -128,11 +159,11 @@ vec3 CalculateGradSpiky(vec3 r, float h){
 }
 
 // Given position in world space, return the index of the corresponding cell in grid space.
-vec3 Grid::getIndices(const vec3 &pos) {
+ivec3 Grid::getIndices(const vec3 &pos) {
     int i = (int)((pos[0] - minBounds[0]) / cellSize);
     int j = (int)((pos[1] - minBounds[1]) / cellSize);
     int k = (int)((pos[2] - minBounds[2]) / cellSize);
-    return vec3(i, j, k);
+    return ivec3(i, j, k);
 }
 
 int Grid::flatIndex(int i, int j, int k) {
@@ -148,7 +179,7 @@ Cell* Grid::operator() (int i, int j, int k) {
 // This function populates cells with the correct particles.
 void Grid::update( std::vector<Particle> &particles) {
     for (Particle &p : particles) {
-        vec3 indices = getIndices(p.pos);
+        ivec3 indices = getIndices(p.pos);
         Cell * cell = cells[flatIndex(indices[0], indices[1], indices[2])];
         cell->particles.push_back(&p);
         cell->count++;
@@ -157,13 +188,16 @@ void Grid::update( std::vector<Particle> &particles) {
 
 // Clear all the grid cells
 void Grid::clear() {
-    cells = std::vector<Cell *>(dimensions[0]*dimensions[1]*dimensions[2], new Cell());
+    for (Cell * c : cells) {
+        c->particles.clear();
+        c->count = 0;
+    }
 }
 
 // Find all the neighbors of this particle.
 void PBFSolver::FindNeighbors(Particle *p){
     p->neighbors.clear();
-    vec3 indices = uGrid.getIndices(p->pos);
+    ivec3 indices = uGrid.getIndices(p->pos);
     for (int i = indices[0] - NEIGHBOR_RADIUS; i <= indices[0] + NEIGHBOR_RADIUS; ++i){
         for (int j = indices[1] - NEIGHBOR_RADIUS; j <= indices[1] + NEIGHBOR_RADIUS; ++j){
             for (int k = indices[2] - NEIGHBOR_RADIUS; k <= indices[2] + NEIGHBOR_RADIUS; ++k){
