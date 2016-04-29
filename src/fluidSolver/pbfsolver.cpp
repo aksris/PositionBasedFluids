@@ -1,12 +1,112 @@
 #include "pbfsolver.h"
 
-#define MU_VISCOSITY 0.2f
+#define MU_VISCOSITY 0.02f
+#define MAX_ITER 5
 
 PBFSolver::PBFSolver(vec3 minBounds, vec3 maxBounds)
 {
     rDensity = 1000.f;
     numParticles = ParticlesContainer.size();
     uGrid = Grid(minBounds, maxBounds, 1.f);
+}
+
+void PBFSolver::step(){
+    //clearing acceleration and set gravity
+    clearAccel();
+    // Advection; semi implicit euler
+    for(Particle &p: ParticlesContainer){
+        p.pos_star = vec3(0.f);
+        p.old_pos = p.pos;
+        p.speed += p.accel * t_stp;
+        p.pos += p.speed * t_stp;
+    }
+    //find all particles
+    for(Particle &p: ParticlesContainer){
+        FindNeighbors(&p);
+    }
+    //constraint projection
+    ConstraintProjection();
+    for(Particle &p: ParticlesContainer){
+        p.speed = (1 / t_stp) * (p.pos - p.old_pos);
+    }
+    //add viscosity
+    //boundary
+}
+
+void PBFSolver::ConstraintProjection(){
+    int iter = 0;
+    while(iter < MAX_ITER){
+        for(Particle &p : ParticlesContainer){
+            p.density = CalculateDensity(&p, uGrid.cellSize);
+            CalculateLagrangeMultiplier(&p);
+        }
+        for(Particle &p: ParticlesContainer){
+            vec3 corr = SolveDensityConstraint(&p);
+            p.pos_star = corr;
+        }
+        for(Particle &p : ParticlesContainer){
+            p.pos += p.pos_star;
+        }
+        ++iter;
+    }
+}
+
+vec3 PBFSolver::SolveDensityConstraint(Particle *p){
+    vec3 corr(0.f);
+    for(Particle *n : p->neighbors){
+        vec3 grad_Cj = -n->mass / rDensity * GradW(p->pos - n->pos);
+        corr -= (p->lambda + n->lambda) * grad_Cj;
+    }
+    return corr;
+}
+
+float PBFSolver::W(vec3 r){
+
+    float res = 0.f;
+    const float r1 = sqrt(dot(r, r));
+//            normalize(r);
+    const float q = r1 / uGrid.cellSize;
+
+    if(q <= 1.0001f){
+        if(q <= 0.5f){
+            const float q2 = q * q;
+            const float q3 = q * q * q;
+            res = (8.f / M_PI * pow(uGrid.cellSize, 3)) * (6.f * q3 - 6.f * q2 + 1.f);
+        }
+        else{
+            res = (8.f / M_PI * pow(uGrid.cellSize, 3)) * (2.f * pow(1.f - q, 3));
+        }
+    }
+    return res;
+}
+
+vec3 PBFSolver::GradW(vec3 r){
+    vec3 res(0.f);
+
+    const float r1 = sqrt(dot(r, r));
+//            normalize(r);
+    const float q = r1 / uGrid.cellSize;
+
+    if(q <= 1.0001f){
+        if(r1 > 1.0e-6){
+            const vec3 gradQ = r * ((float) 1.0 / (r1 * uGrid.cellSize));
+            if(q <= 0.5f){
+                res = (float)(48.f / (M_PI * pow(uGrid.cellSize, 3))) * q * ((3.0f * q - 2.0f)) * gradQ;
+            }
+            else{
+                const float factor = 1.f - q;
+                res = (float)(48.f / (M_PI * pow(uGrid.cellSize, 3))) * (-factor * factor) * gradQ;
+            }
+        }
+    }
+
+    return res;
+}
+
+void PBFSolver::clearAccel(){
+    for(Particle &p : ParticlesContainer){
+        p.accel = vec3(0.f, -9.81f, 0.f);
+    }
 }
 
 void PBFSolver::ApplyForces(Particle& p, float del_t){
@@ -97,10 +197,9 @@ float PBFSolver::CalculateSCorr(vec3 r, float h, float q, int n){
 
 float PBFSolver::CalculateDensity(Particle *p, float h){
     float totalDensity = 0.f;
-
+    totalDensity = p->mass * W(vec3(0.f));
     for(Particle *n : p->neighbors){
-        vec3 r = ((n->pos - p->pos));
-        totalDensity += p->mass * CalculatePoly6(r, h);
+        totalDensity += n->mass * W(p->pos - n->pos);
     }
     // this is because we have the current particle in the neighbor list, so we subtract the contribution to density
     return totalDensity;
@@ -127,26 +226,33 @@ void PBFSolver::CalculateLagrangeMultiplier(Particle* p){
     const float eps = 1.0e-6f;
 
     float h = 1.000001f, lambda;
-    float density = CalculateDensity(p, h);
+//    float density = CalculateDensity(p, h);
     // Evaluate constraint function, numerator for the lagrangian multiplier
-    const float C = std::max(density / rDensity - 1.0f, 0.0f);
+    const float C = std::max(p->density / rDensity - 1.0f, 0.0f);
 
     if(C != 0.f){
         float sum_grad_C2 = 0.0;
+        vec3 gradC_i(0.0f);
 
         for(Particle* n : p->neighbors){
             //1. if k = i, k is the current particle
                 //summation over the neighbors
-            if(length(p->pos - n->pos) < 0.001f){
-                continue;
-            }
-            else{
-                sum_grad_C2 += length2(GradientAtN(n, p));
-            }
-            //2. if k = j, k is a neighboring particle
-                //negative grad
+            vec3 grad_Cj = -n->mass / rDensity * GradW(p->pos - n->pos);
+            sum_grad_C2 += dot(grad_Cj, grad_Cj);
+                //grad_Cj.squaredNorm()
+            gradC_i -= grad_Cj;
+//            if(length(p->pos - n->pos) < 0.001f){
+//                continue;
+//            }
+//            else{
+//                sum_grad_C2 += length2(GradientAtN(n, p));
+//            }
+//            //2. if k = j, k is a neighboring particle
+//                //negative grad
+//        }
         }
-        sum_grad_C2 += length2(GradientAtP(p));
+        sum_grad_C2 += dot(gradC_i, gradC_i);
+            //grad_Ci.squaredNorm();
 
         // Compute lambda
         lambda = -C / (sum_grad_C2 + eps);

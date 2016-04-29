@@ -7,17 +7,20 @@ Particle::Particle(){
     pos = glm::vec3(0.f, 0.f, 0.f);
     pos_star = glm::vec3(0.f, 0.f, 0.f);
     speed = glm::vec3(0.f, 0.f, 0.f);
+    size = 0.1f;
     r = 0;
     g = 0;
     b = 220;
     a = 230;
-    size = 0.1f;
+    radius = 0.025f;
     angle = 45.f;
     mass = 1.1f;
     life = 1.f;
     cameradistance = 10.f;
     density = 1.f;
     lambda = 0.f;
+    accel = glm::vec3(0.f);
+    old_pos = vec3(0.f);
 }
 
 FluidSolver::FluidSolver(){
@@ -56,14 +59,15 @@ void FluidSolver::particlesInit(){
     }
 }
 
-void FluidSolver::genParticles(float particle_separation, float boundx, float boundy, float boundz){
+void FluidSolver::genParticles(float particle_separation, float boundx, float boundy, float boundz, float time_step){
     Particle p;
-
+    float diam;
     for(float i = -boundx/2; i < boundx/2; i+= particle_separation){
         for(float j = -boundy/2; j < boundy/2; j+= particle_separation){
             for(float k = -boundz/2; k <boundz/2; k+= particle_separation){
                 p.pos = glm::vec3(i, j, k);
-                p.mass = 0.125f;
+                diam = p.radius * 2.f;
+                p.mass = 0.8f * diam*diam*diam * 1000.f;
                 ParticlesContainer.push_back(p);
             }
         }

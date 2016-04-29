@@ -16,19 +16,19 @@
 #include <iostream>
 using namespace glm;
 
-enum geomtype {AIR = 0, FLUID = 1, SOLID = 2};
 class Particle{
 
 public:
     Particle();
     int gridIdx;
-    glm::vec3 pos, speed;
+    glm::vec3 pos, speed, old_pos;
     unsigned char r,g,b,a; // Color
-    float size, angle, mass, density;
+    float radius, size, angle, mass, density;
     float life; // Remaining life of the particle. if <0 : dead and unused.
     float cameradistance; // *Squared* distance to the camera. if dead : -1.0f
     float lambda;
     vec3 pos_star;
+    vec3 accel;
 
     std::vector<Particle *> neighbors;
     bool operator<(const Particle& that) const {
@@ -52,7 +52,9 @@ public:
     int findUnusedParticles();
     void sortParticles();
     void particlesInit();
-    void genParticles(float particle_separation, float boundx, float boundy, float boundz);
+    void genParticles(float particle_separation, float boundx, float boundy, float boundz, float time_step);
+
+    float t_stp;
 
 
 };

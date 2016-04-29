@@ -7,6 +7,7 @@
 #define del_q 0.1
 #define PBF_H 0.5f
 #define NEIGHBOR_RADIUS 1 //find neighbor radius
+#include <math.h>
 
 class Cell
 {
@@ -57,6 +58,15 @@ public:
     vec3 GradientAtN(Particle* n, Particle* p);
     void CalculateViscosityForce(Particle& p, float del_t);
     float ViscousLaplacian(const vec3 diff, float h);
+
+    void step();
+    vec3 SolveDensityConstraint(Particle *p);
+    void clearAccel();
+    void ConstraintProjection();
+
+    vec3 GradW(vec3 r);
+    float W(vec3 r);
+
     Grid uGrid;
 protected:
     float rDensity;

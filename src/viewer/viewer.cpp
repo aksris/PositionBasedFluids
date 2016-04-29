@@ -183,7 +183,7 @@ void Viewer::display(){
     glBufferData(GL_ARRAY_BUFFER, fluid->MaxParticles * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
 
     // Generate particles.
-    fluid->genParticles(scene.particle_separation, scene.particleBounds.x, scene.particleBounds.y, scene.particleBounds.z);
+    fluid->genParticles(scene.particle_separation, scene.particleBounds.x, scene.particleBounds.y, scene.particleBounds.z, 0.00f);
 
     Camera camera;
     //construct mac grid
@@ -211,51 +211,53 @@ void Viewer::display(){
 
         glm::mat4 ViewProjectionMatrixParticles = ProjectionMatrixParticles * ViewMatrixParticles;
 
-        //apply gravity forces and update pos
-        for (int i = 0; i < fluid->ParticlesContainer.size(); ++i){
-            fluid->ApplyForces(fluid->ParticlesContainer[i], delta * 0.5f);
-            //fluid->CalculateViscosityForce(fluid->ParticlesContainer[i], delta * 0.5f);
-        }
+        fluid->step();
 
-        // Update simulation.
-        fluid->uGrid.update(fluid->ParticlesContainer);
-        for(int j = 0; j < fluid->ParticlesContainer.size(); ++j){
-            fluid->FindNeighbors(&(fluid->ParticlesContainer[j]));
-        }
-        //simulation loop
-        for(int i = 0; i < 6; i++){
-            for(Particle &p : fluid->ParticlesContainer){
-                fluid->CalculateLagrangeMultiplier(&p);
-            }
-            for(int j = 0; j < fluid->ParticlesContainer.size(); ++j){
-                fluid->del_p[j] = fluid->CalculateDeltaP(&fluid->ParticlesContainer[j] );
-                if (fluid->ParticlesContainer.at(j).pos_star.y < EPSILON){
-                    fluid->ParticlesContainer.at(j).speed *= (vec3(1.f, -1.f, 1.f));
-                    fluid->ParticlesContainer.at(j).pos_star += fluid->ParticlesContainer.at(j).speed
-                    * (float)delta ;
-                }
-            }
-            for(int i = 0; i < fluid->ParticlesContainer.size(); ++i){
-                fluid->ParticlesContainer[i].pos_star += fluid->del_p[i];
-            }
-        }
+//        //apply gravity forces and update pos
+//        for (int i = 0; i < fluid->ParticlesContainer.size(); ++i){
+//            fluid->ApplyForces(fluid->ParticlesContainer[i], delta * 0.5f);
+//            //fluid->CalculateViscosityForce(fluid->ParticlesContainer[i], delta * 0.5f);
+//        }
 
-        for(int i = 0; i < fluid->ParticlesContainer.size(); ++i){
-            fluid->ParticlesContainer[i].speed = 1.f / (float)delta * (fluid->ParticlesContainer[i].pos_star - fluid->ParticlesContainer[i].pos);
-            fluid->ParticlesContainer[i].pos = fluid->ParticlesContainer[i].pos_star;
-        }
+//        // Update simulation.
+//        fluid->uGrid.update(fluid->ParticlesContainer);
+//        for(int j = 0; j < fluid->ParticlesContainer.size(); ++j){
+//            fluid->FindNeighbors(&(fluid->ParticlesContainer[j]));
+//        }
+//        //simulation loop
+//        for(int i = 0; i < 6; i++){
+//            for(Particle &p : fluid->ParticlesContainer){
+//                fluid->CalculateLagrangeMultiplier(&p);
+//            }
+//            for(int j = 0; j < fluid->ParticlesContainer.size(); ++j){
+//                fluid->del_p[j] = fluid->CalculateDeltaP(&fluid->ParticlesContainer[j] );
+//                if (fluid->ParticlesContainer.at(j).pos_star.y < EPSILON){
+//                    fluid->ParticlesContainer.at(j).speed *= (vec3(1.f, -1.f, 1.f));
+//                    fluid->ParticlesContainer.at(j).pos_star += fluid->ParticlesContainer.at(j).speed
+//                    * (float)delta ;
+//                }
+//            }
+//            for(int i = 0; i < fluid->ParticlesContainer.size(); ++i){
+//                fluid->ParticlesContainer[i].pos_star += fluid->del_p[i];
+//            }
+//        }
 
-        // Bounds clamping
-        for(Particle &p : fluid->ParticlesContainer){
-            p.pos[0] = p.pos[0] < -fluid->uGrid.dimensions[0] / 2 ? -fluid->uGrid.dimensions[0] / 2 : p.pos[0];
-                        p.pos[1] = p.pos[1] < -fluid->uGrid.dimensions[1] / 2 ? -fluid->uGrid.dimensions[1] / 2 : p.pos[1];
-                        p.pos[2] = p.pos[2] < -fluid->uGrid.dimensions[2] / 2 ? -fluid->uGrid.dimensions[2] / 2 : p.pos[2];
+//        for(int i = 0; i < fluid->ParticlesContainer.size(); ++i){
+//            fluid->ParticlesContainer[i].speed = 1.f / (float)delta * (fluid->ParticlesContainer[i].pos_star - fluid->ParticlesContainer[i].pos);
+//            fluid->ParticlesContainer[i].pos = fluid->ParticlesContainer[i].pos_star;
+//        }
 
-                        p.pos[0] = p.pos[0] > fluid->uGrid.dimensions[0] / 2 ? fluid->uGrid.dimensions[0] / 2 - 1 : p.pos[0];
-                        p.pos[1] = p.pos[1] > fluid->uGrid.dimensions[1] / 2 ? fluid->uGrid.dimensions[1] / 2 - 1 : p.pos[1];
-                        p.pos[2] = p.pos[2] > fluid->uGrid.dimensions[2] / 2 ? fluid->uGrid.dimensions[2] / 2 - 1 : p.pos[2];
+//        // Bounds clamping
+//        for(Particle &p : fluid->ParticlesContainer){
+//            p.pos[0] = p.pos[0] < -fluid->uGrid.dimensions[0] / 2 ? -fluid->uGrid.dimensions[0] / 2 : p.pos[0];
+//                        p.pos[1] = p.pos[1] < -fluid->uGrid.dimensions[1] / 2 ? -fluid->uGrid.dimensions[1] / 2 : p.pos[1];
+//                        p.pos[2] = p.pos[2] < -fluid->uGrid.dimensions[2] / 2 ? -fluid->uGrid.dimensions[2] / 2 : p.pos[2];
 
-        }
+//                        p.pos[0] = p.pos[0] > fluid->uGrid.dimensions[0] / 2 ? fluid->uGrid.dimensions[0] / 2 - 1 : p.pos[0];
+//                        p.pos[1] = p.pos[1] > fluid->uGrid.dimensions[1] / 2 ? fluid->uGrid.dimensions[1] / 2 - 1 : p.pos[1];
+//                        p.pos[2] = p.pos[2] > fluid->uGrid.dimensions[2] / 2 ? fluid->uGrid.dimensions[2] / 2 - 1 : p.pos[2];
+
+//        }
 
         int ParticlesCount = 0;
         for(int i=0; i< fluid->ParticlesContainer.size(); i++){
@@ -269,7 +271,7 @@ void Viewer::display(){
             g_particule_position_size_data[4*ParticlesCount+1] = p.pos.y;
             g_particule_position_size_data[4*ParticlesCount+2] = p.pos.z;
 
-            g_particule_position_size_data[4*ParticlesCount+3] = p.size;
+            g_particule_position_size_data[4*ParticlesCount+3] = 0.1f;
 
             g_particule_color_data[4*ParticlesCount+0] = p.r;
             g_particule_color_data[4*ParticlesCount+1] = p.g;
